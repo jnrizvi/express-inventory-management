@@ -3,11 +3,45 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.store.createMany({
+  await prisma.role.createMany({
     data: [
       {
-        name: "",
+        key: "CUSTOMER",
+        description: "User who purchases products from a store.",
       },
+      {
+        key: "OWNER",
+        description: "User who owns a store.",
+      },
+      {
+        key: "SUPPLIER",
+        description: "User who supplies products for a store.",
+      },
+    ],
+  });
+
+  await prisma.user.createMany({
+    data: [
+      {
+        name: "Bob",
+        email: "bob@example.com",
+        role_key: "CUSTOMER",
+      },
+      {
+        name: "Roger",
+        email: "roger@example.com",
+        role_key: "OWNER",
+      },
+      {
+        name: "Hudson",
+        email: "hudson@example.com",
+        role_key: "SUPPLIER",
+      },
+    ],
+  });
+
+  await prisma.store.createMany({
+    data: [
       {
         name: "",
       },
@@ -24,64 +58,17 @@ async function main() {
     ],
   });
 
-  await prisma.user.create({
-    data: {
-      name: "Bob",
-      email: "bob@example.com",
-      // This works
-      userRoles: {
-        create: {
-          role: {
-            create: {
-              name: "CUSTOMER",
-            },
-          },
-        },
-      },
-    },
-  });
-
-  await prisma.user.create({
-    data: {
-      name: "Roger",
-      email: "roger@example.com",
-      // This works
-      userRoles: {
-        create: {
-          role: {
-            create: {
-              name: "OWNER",
-            },
-          },
-        },
-      },
-    },
-  });
-
-  await prisma.user.create({
-    data: {
-      name: "Hudson",
-      email: "hudson@example.com",
-      // This works
-      userRoles: {
-        create: {
-          role: {
-            create: {
-              name: "SUPPLIER",
-            },
-          },
-        },
-      },
-    },
-  });
-
   await prisma.orderType.createMany({
     data: [
       {
-        name: "CUSTOMER_ORDER",
+        key: "CUSTOMER_ORDER",
+        description:
+          "An order placed by a customer to purchase a product from a store.",
       },
       {
-        name: "SUPPLIER_ORDER",
+        key: "SUPPLIER_ORDER",
+        description:
+          "An order placed by an owner to purchase a product from a supplier.",
       },
     ],
   });
@@ -89,7 +76,13 @@ async function main() {
   await prisma.orderStatus.createMany({
     data: [
       {
-        name: "COMPLETE",
+        key: "OPEN",
+      },
+      {
+        key: "ARCHIVED",
+      },
+      {
+        key: "CANCELED",
       },
     ],
   });
@@ -97,10 +90,30 @@ async function main() {
   await prisma.transactionType.createMany({
     data: [
       {
-        name: "SALE",
+        key: "SALE",
       },
       {
-        name: "REFUND",
+        key: "REFUND",
+      },
+    ],
+  });
+
+  await prisma.transactionStatus.createMany({
+    data: [
+      {
+        key: "PENDING",
+      },
+      {
+        key: "PAID",
+      },
+      {
+        key: "REFUNDED",
+      },
+      {
+        key: "UNPAID",
+      },
+      {
+        key: "VOIDED",
       },
     ],
   });
@@ -108,13 +121,16 @@ async function main() {
   await prisma.transactionMethod.createMany({
     data: [
       {
-        name: "STRIPE",
+        key: "CASH_ON_DELIVERY",
       },
       {
-        name: "APPLE_PAY",
+        key: "STRIPE",
       },
       {
-        name: "VISA",
+        key: "APPLE_PAY",
+      },
+      {
+        key: "VISA",
       },
     ],
   });

@@ -14,104 +14,105 @@ model User {
   id           Int           @id @default(autoincrement())
   name         String        @db.VarChar(255)
   email        String        @unique @db.VarChar(255)
+  role_key     String
+  role         Role          @relation(fields: [role_key], references: [key])
   orders       Order[]
   storeUsers   StoreUser[]
   productUsers ProductUser[]
-  userRoles    UserRole[]
 
   @@map("user")
 }
 
-model UserRole {
-  id      Int  @id @default(autoincrement())
-  user_id Int
-  role_id Int
-  user    User @relation(fields: [user_id], references: [id])
-  role    Role @relation(fields: [role_id], references: [id])
-
-  @@map("user_role")
-}
-
 model Role {
-  id        Int        @id @default(autoincrement())
-  name      String     @unique @db.VarChar(255)
-  UserRoles UserRole[]
+  key         String  @id
+  description String? @db.VarChar(255)
+  User        User[]
 
   @@map("role")
 }
 
 model Order {
-  id              Int            @id @default(autoincrement())
-  user_id         Int
-  order_type_id   Int
-  order_status_id Int
-  total           BigInt         @db.BigInt
-  date            DateTime       @default(now()) @db.Timestamptz
-  user            User?          @relation(fields: [user_id], references: [id])
-  orderType       OrderType?     @relation(fields: [order_type_id], references: [id])
-  orderStatus     OrderStatus?   @relation(fields: [order_status_id], references: [id])
-  orderProducts   OrderProduct[]
-  transactions    Transaction[]
+  id               Int            @id @default(autoincrement())
+  user_id          Int
+  order_type_key   String
+  order_status_key String
+  total            BigInt         @db.BigInt
+  date             DateTime       @default(now()) @db.Timestamptz
+  user             User           @relation(fields: [user_id], references: [id])
+  orderType        OrderType      @relation(fields: [order_type_key], references: [key])
+  orderStatus      OrderStatus    @relation(fields: [order_status_key], references: [key])
+  orderProducts    OrderProduct[]
+  transactions     Transaction[]
 
   @@map("order")
 }
 
 model OrderType {
-  id     Int     @id @default(autoincrement())
-  name   String  @unique @db.VarChar(255)
-  orders Order[]
+  key         String  @id
+  description String? @db.VarChar(255)
+  orders      Order[]
 
   @@map("order_type")
 }
 
 model OrderStatus {
-  id     Int     @id @default(autoincrement())
-  name   String  @unique @db.VarChar(255)
-  orders Order[]
+  key         String  @id
+  description String? @db.VarChar(255)
+  orders      Order[]
 
   @@map("order_status")
 }
 
 model OrderProduct {
-  id            Int      @id @default(autoincrement())
-  order_id      Int
-  product_id    Int
-  quantity_sold Int
-  subtotal      BigInt   @db.BigInt
-  order         Order?   @relation(fields: [order_id], references: [id])
-  product       Product? @relation(fields: [product_id], references: [id])
+  id               Int     @id @default(autoincrement())
+  order_id         Int
+  product_id       Int
+  quantity_ordered Int
+  subtotal         BigInt  @db.BigInt
+  order            Order   @relation(fields: [order_id], references: [id])
+  product          Product @relation(fields: [product_id], references: [id])
 
   @@map("order_product")
 }
 
 model Transaction {
-  id                    Int                @id @default(autoincrement())
-  order_id              Int
-  transaction_type_id   Int
-  transaction_method_id Int
-  amount                BigInt             @db.BigInt
-  date                  DateTime           @default(now()) @db.Timestamptz
-  order                 Order?             @relation(fields: [order_id], references: [id])
-  transactionType       TransactionType?   @relation(fields: [transaction_type_id], references: [id])
-  transactionMethod     TransactionMethod? @relation(fields: [transaction_method_id], references: [id])
+  id                     Int               @id @default(autoincrement())
+  order_id               Int
+  transaction_type_key   String
+  transaction_status_key String
+  transaction_method_key String
+  amount                 BigInt            @db.BigInt
+  date                   DateTime          @default(now()) @db.Timestamptz
+  order                  Order             @relation(fields: [order_id], references: [id])
+  transactionType        TransactionType   @relation(fields: [transaction_type_key], references: [key])
+  transactionStatus      TransactionStatus @relation(fields: [transaction_status_key], references: [key])
+  transactionMethod      TransactionMethod @relation(fields: [transaction_method_key], references: [key])
 
   @@map("transaction")
 }
 
 model TransactionType {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique @db.VarChar(255)
+  key          String        @id
+  description  String?       @db.VarChar(255)
   transactions Transaction[]
 
   @@map("transaction_type")
 }
 
 model TransactionMethod {
-  id           Int           @id @default(autoincrement())
-  name         String        @unique @db.VarChar(255)
+  key          String        @id
+  description  String?       @db.VarChar(255)
   transactions Transaction[]
 
   @@map("transaction_method")
+}
+
+model TransactionStatus {
+  key          String        @id
+  description  String?       @db.VarChar(255)
+  transactions Transaction[]
+
+  @@map("transaction_status")
 }
 
 model Product {
@@ -127,23 +128,23 @@ model Product {
 }
 
 model ProductUser {
-  id                 Int      @id @default(autoincrement())
+  id                 Int     @id @default(autoincrement())
   product_id         Int
   user_id            Int
   quantity_available Int
-  product            Product? @relation(fields: [product_id], references: [id])
-  user               User?    @relation(fields: [user_id], references: [id])
+  product            Product @relation(fields: [product_id], references: [id])
+  user               User    @relation(fields: [user_id], references: [id])
 
   @@map("product_user")
 }
 
 model StoreProduct {
-  id               Int      @id @default(autoincrement())
+  id               Int     @id @default(autoincrement())
   product_id       Int
   store_id         Int
   quantity_stocked Int
-  product          Product? @relation(fields: [product_id], references: [id])
-  store            Store?   @relation(fields: [store_id], references: [id])
+  product          Product @relation(fields: [product_id], references: [id])
+  store            Store   @relation(fields: [store_id], references: [id])
 
   @@map("store_product")
 }
@@ -158,11 +159,11 @@ model Store {
 }
 
 model StoreUser {
-  id       Int    @id @default(autoincrement())
+  id       Int   @id @default(autoincrement())
   store_id Int
   user_id  Int
-  store    Store? @relation(fields: [store_id], references: [id])
-  user     User?  @relation(fields: [user_id], references: [id])
+  store    Store @relation(fields: [store_id], references: [id])
+  user     User  @relation(fields: [user_id], references: [id])
 
   @@map("store_user")
 }
