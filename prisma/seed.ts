@@ -40,22 +40,68 @@ async function main() {
     ],
   });
 
-  await prisma.store.createMany({
-    data: [
-      {
-        name: "",
+  await prisma.store.create({
+    data: {
+      name: "Power Up Fitness",
+      storeProduct: {
+        create: [
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Resistance Superbands",
+                price: 499,
+              },
+            },
+          },
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Deluxe Floor Mat",
+                price: 999,
+              },
+            },
+          },
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Medium Density Foam Roller (Black)",
+                price: 1199,
+              },
+            },
+          },
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Spikey Massage Ball (8.5 CM)",
+                price: 699,
+              },
+            },
+          },
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Power Medicine Balls",
+                price: 2999,
+              },
+            },
+          },
+          {
+            quantity_stocked: 5,
+            product: {
+              create: {
+                name: "Adjustable Skipping Rope",
+                price: 1499,
+              },
+            },
+          },
+        ],
       },
-    ],
-  });
-
-  await prisma.product.createMany({
-    data: [
-      {
-        name: "",
-        description: "",
-        price: 4,
-      },
-    ],
+    },
   });
 
   await prisma.orderType.createMany({
