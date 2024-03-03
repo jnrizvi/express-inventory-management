@@ -36,7 +36,7 @@ model Order {
   user_id          Int
   order_type_key   String
   order_status_key String
-  total            BigInt         @db.BigInt
+  total            Int
   date             DateTime       @default(now()) @db.Timestamptz
   user             User           @relation(fields: [user_id], references: [id])
   orderType        OrderType      @relation(fields: [order_type_key], references: [key])
@@ -68,7 +68,7 @@ model OrderProduct {
   order_id         Int
   product_id       Int
   quantity_ordered Int
-  subtotal         BigInt  @db.BigInt
+  subtotal         Int
   order            Order   @relation(fields: [order_id], references: [id])
   product          Product @relation(fields: [product_id], references: [id])
 
@@ -81,7 +81,7 @@ model Transaction {
   transaction_type_key   String
   transaction_status_key String
   transaction_method_key String
-  amount                 BigInt            @db.BigInt
+  amount                 Int
   date                   DateTime          @default(now()) @db.Timestamptz
   order                  Order             @relation(fields: [order_id], references: [id])
   transactionType        TransactionType   @relation(fields: [transaction_type_key], references: [key])
@@ -119,7 +119,7 @@ model Product {
   id            Int            @id @default(autoincrement())
   name          String         @db.VarChar(255)
   description   String?        @db.VarChar(255)
-  price         BigInt         @db.BigInt
+  price         Int
   orderProducts OrderProduct[]
   storeProducts StoreProduct[]
   productUsers  ProductUser[]
