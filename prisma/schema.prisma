@@ -34,11 +34,13 @@ model Role {
 model Order {
   id               Int            @id @default(autoincrement())
   user_id          Int
+  store_id         Int
   order_type_key   String
   order_status_key String
   total            Int
   date             DateTime       @default(now()) @db.Timestamptz
   user             User           @relation(fields: [user_id], references: [id])
+  store            Store          @relation(fields: [store_id], references: [id])
   orderType        OrderType      @relation(fields: [order_type_key], references: [key])
   orderStatus      OrderStatus    @relation(fields: [order_status_key], references: [key])
   orderProducts    OrderProduct[]
@@ -150,10 +152,11 @@ model StoreProduct {
 }
 
 model Store {
-  id           Int            @id @default(autoincrement())
-  name         String         @db.VarChar(255)
-  storeUsers   StoreUser[]
-  storeProduct StoreProduct[]
+  id            Int            @id @default(autoincrement())
+  name          String         @db.VarChar(255)
+  storeUsers    StoreUser[]
+  storeProducts StoreProduct[]
+  orders        Order[]
 
   @@map("store")
 }

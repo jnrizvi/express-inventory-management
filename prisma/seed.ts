@@ -43,7 +43,7 @@ async function main() {
   await prisma.store.create({
     data: {
       name: "Power Up Fitness",
-      storeProduct: {
+      storeProducts: {
         create: [
           {
             quantity_stocked: 5,
