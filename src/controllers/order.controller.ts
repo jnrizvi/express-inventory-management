@@ -15,6 +15,7 @@ const allStoreOrders = async (req: Request, res: Response) => {
   res.send(orders);
 };
 
+// Should I not return anything?
 const specificStoreOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const orderId = +req.params.orderId;
@@ -23,7 +24,16 @@ const specificStoreOrder = async (req: Request, res: Response) => {
   res.send(order);
 };
 
+// Should I not return anything?
+const placeStoreOrder = async (req: Request, res: Response) => {
+  const payload = req.body;
+
+  const order = await orderService.placeStoreOrder(payload);
+  res.send(order);
+};
+
 export default {
   allStoreOrders,
   specificStoreOrder,
+  placeStoreOrder,
 };

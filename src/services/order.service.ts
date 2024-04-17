@@ -29,7 +29,27 @@ const specificStoreOrder = async (
   });
 };
 
+// TODO: Use a data transfer object instead of the prisma type. Also type.
+const placeStoreOrder = async (payload: any): Promise<Order> => {
+  return prisma.order.create({
+    data: {
+      ...payload.order,
+      orderProducts: {
+        createMany: {
+          data: payload.orderProducts,
+        },
+      },
+      transactions: {
+        createMany: {
+          data: payload.transactions,
+        },
+      },
+    },
+  });
+};
+
 export default {
   allStoreOrders,
   specificStoreOrder,
+  placeStoreOrder,
 };
