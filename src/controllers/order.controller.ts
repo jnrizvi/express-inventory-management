@@ -32,8 +32,17 @@ const placeStoreOrder = async (req: Request, res: Response) => {
   res.send(order);
 };
 
+const fulfillStoreOrder = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const orderId = +req.params.orderId;
+
+  const order = await orderService.fulfillStoreOrder(storeId, orderId);
+  res.send(order);
+};
+
 export default {
   allStoreOrders,
   specificStoreOrder,
   placeStoreOrder,
+  fulfillStoreOrder,
 };

@@ -9,5 +9,6 @@ router.get(
   orderController.specificStoreOrder
 );
 router.post("/store/:storeId/order", orderController.placeStoreOrder);
+router.put("/store/:storeId/order/:orderId", orderController.fulfillStoreOrder);
 
 export default router;
