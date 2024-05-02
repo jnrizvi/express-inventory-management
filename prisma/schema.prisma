@@ -11,40 +11,44 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  name         String        @db.VarChar(255)
-  email        String        @unique @db.VarChar(255)
-  role_key     String
-  role         Role          @relation(fields: [role_key], references: [key])
-  orders       Order[]
-  storeUsers   StoreUser[]
-  productUsers ProductUser[]
+  id            Int      @id @default(autoincrement())
+  address_id    Int
+  user_role_key String
+  name          String   @db.VarChar(255)
+  email         String   @unique @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  userRole UserRole @relation(fields: [user_role_key], references: [key])
+  address  Address  @relation(fields: [address_id], references: [id])
+  orders   Order[]
 
   @@map("user")
 }
 
-model Role {
+model UserRole {
   key         String  @id
   description String? @db.VarChar(255)
-  User        User[]
 
-  @@map("role")
+  users User[]
+
+  @@map("user_role")
 }
 
 model Order {
-  id               Int            @id @default(autoincrement())
-  user_id          Int
+  id               Int      @id @default(autoincrement())
   store_id         Int
+  user_id          Int
   order_type_key   String
   order_status_key String
-  total            Int
-  date             DateTime       @default(now()) @db.Timestamptz
-  user             User           @relation(fields: [user_id], references: [id])
-  store            Store          @relation(fields: [store_id], references: [id])
-  orderType        OrderType      @relation(fields: [order_type_key], references: [key])
-  orderStatus      OrderStatus    @relation(fields: [order_status_key], references: [key])
-  orderProducts    OrderProduct[]
-  transactions     Transaction[]
+  created_at       DateTime @default(now()) @db.Timestamptz
+
+  store        Store         @relation(fields: [store_id], references: [id])
+  user         User          @relation(fields: [user_id], references: [id])
+  orderType    OrderType     @relation(fields: [order_type_key], references: [key])
+  orderStatus  OrderStatus   @relation(fields: [order_status_key], references: [key])
+  orderLines   OrderLine[]
+  transactions Transaction[]
+  shipments    Shipment[]
 
   @@map("order")
 }
@@ -52,7 +56,8 @@ model Order {
 model OrderType {
   key         String  @id
   description String? @db.VarChar(255)
-  orders      Order[]
+
+  orders Order[]
 
   @@map("order_type")
 }
@@ -60,113 +65,145 @@ model OrderType {
 model OrderStatus {
   key         String  @id
   description String? @db.VarChar(255)
-  orders      Order[]
+
+  orders Order[]
 
   @@map("order_status")
 }
 
-model OrderProduct {
-  id               Int     @id @default(autoincrement())
+model OrderLine {
+  id               Int @id @default(autoincrement())
   order_id         Int
   product_id       Int
+  unit_price       Int
   quantity_ordered Int
-  subtotal         Int
-  order            Order   @relation(fields: [order_id], references: [id])
-  product          Product @relation(fields: [product_id], references: [id])
 
-  @@map("order_product")
+  order   Order   @relation(fields: [order_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id])
+
+  @@map("order_line")
 }
 
 model Transaction {
-  id                     Int               @id @default(autoincrement())
+  id                     Int      @id @default(autoincrement())
   order_id               Int
   transaction_type_key   String
   transaction_status_key String
   transaction_method_key String
   amount                 Int
-  date                   DateTime          @default(now()) @db.Timestamptz
-  order                  Order             @relation(fields: [order_id], references: [id])
-  transactionType        TransactionType   @relation(fields: [transaction_type_key], references: [key])
-  transactionStatus      TransactionStatus @relation(fields: [transaction_status_key], references: [key])
-  transactionMethod      TransactionMethod @relation(fields: [transaction_method_key], references: [key])
+  created_at             DateTime @default(now()) @db.Timestamptz
+
+  order             Order             @relation(fields: [order_id], references: [id])
+  transactionType   TransactionType   @relation(fields: [transaction_type_key], references: [key])
+  transactionStatus TransactionStatus @relation(fields: [transaction_status_key], references: [key])
+  transactionMethod TransactionMethod @relation(fields: [transaction_method_key], references: [key])
 
   @@map("transaction")
 }
 
 model TransactionType {
-  key          String        @id
-  description  String?       @db.VarChar(255)
+  key         String  @id
+  description String? @db.VarChar(255)
+
   transactions Transaction[]
 
   @@map("transaction_type")
 }
 
 model TransactionMethod {
-  key          String        @id
-  description  String?       @db.VarChar(255)
+  key         String  @id
+  description String? @db.VarChar(255)
+
   transactions Transaction[]
 
   @@map("transaction_method")
 }
 
 model TransactionStatus {
-  key          String        @id
-  description  String?       @db.VarChar(255)
+  key         String  @id
+  description String? @db.VarChar(255)
+
   transactions Transaction[]
 
   @@map("transaction_status")
 }
 
 model Product {
-  id            Int            @id @default(autoincrement())
-  name          String         @db.VarChar(255)
-  description   String?        @db.VarChar(255)
-  price         Int
-  orderProducts OrderProduct[]
-  storeProducts StoreProduct[]
-  productUsers  ProductUser[]
+  id          Int      @id @default(autoincrement())
+  name        String   @db.VarChar(255)
+  description String?  @db.VarChar(255)
+  price       Int
+  created_at  DateTime @default(now()) @db.Timestamptz
+
+  orderLines OrderLine[]
+  inventory  Inventory[]
 
   @@map("product")
 }
 
-model ProductUser {
-  id                 Int     @id @default(autoincrement())
-  product_id         Int
-  user_id            Int
-  quantity_available Int
-  product            Product @relation(fields: [product_id], references: [id])
-  user               User    @relation(fields: [user_id], references: [id])
-
-  @@map("product_user")
-}
-
-model StoreProduct {
-  id               Int     @id @default(autoincrement())
+model Inventory {
+  id               Int @id @default(autoincrement())
   product_id       Int
   store_id         Int
   quantity_stocked Int
-  product          Product @relation(fields: [product_id], references: [id])
-  store            Store   @relation(fields: [store_id], references: [id])
 
-  @@map("store_product")
+  product Product @relation(fields: [product_id], references: [id])
+  store   Store   @relation(fields: [store_id], references: [id])
+
+  @@map("inventory")
 }
 
 model Store {
-  id            Int            @id @default(autoincrement())
-  name          String         @db.VarChar(255)
-  storeUsers    StoreUser[]
-  storeProducts StoreProduct[]
-  orders        Order[]
+  id             Int      @id @default(autoincrement())
+  address_id     Int
+  store_type_key String
+  name           String   @db.VarChar(255)
+  email          String   @unique @db.VarChar(255)
+  created_at     DateTime @default(now()) @db.Timestamptz
+
+  address   Address     @relation(fields: [address_id], references: [id])
+  storeType StoreType   @relation(fields: [store_type_key], references: [key])
+  inventory Inventory[]
+  orders    Order[]
 
   @@map("store")
 }
 
-model StoreUser {
-  id       Int   @id @default(autoincrement())
-  store_id Int
-  user_id  Int
-  store    Store @relation(fields: [store_id], references: [id])
-  user     User  @relation(fields: [user_id], references: [id])
+model StoreType {
+  key         String  @id
+  description String? @db.VarChar(255)
 
-  @@map("store_user")
+  stores Store[]
+
+  @@map("store_type")
+}
+
+model Address {
+  id            Int      @id @default(autoincrement())
+  unit_number   Int
+  address_line1 String   @db.VarChar(255)
+  address_line2 String?  @db.VarChar(255)
+  postal_code   String   @db.VarChar(255)
+  city          String   @db.VarChar(255)
+  country       String   @db.VarChar(255)
+  created_at    DateTime @default(now()) @db.Timestamptz
+
+  users     User[]
+  stores    Store[]
+  shipments Shipment[]
+
+  @@map("address")
+}
+
+model Shipment {
+  id            Int       @id @default(autoincrement())
+  order_id      Int
+  address_id    Int
+  date_expected DateTime? @db.Timestamptz
+  created_at    DateTime  @default(now()) @db.Timestamptz
+
+  order   Order   @relation(fields: [order_id], references: [id])
+  address Address @relation(fields: [address_id], references: [id])
+
+  @@map("shipment")
 }

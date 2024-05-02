@@ -31,13 +31,14 @@ const specificStoreOrder = (
 
 // TODO: Use a data transfer object instead of the prisma type. Also type.
 // TODO: Should not be able to place the order if products are not in stock
+// TODO: Create transaction record. Transaction status should be PENDING.
 const placeStoreOrder = (payload: any): Promise<Order> => {
   return prisma.order.create({
     data: {
       ...payload.order,
-      orderProducts: {
+      orderLines: {
         createMany: {
-          data: payload.orderProducts,
+          data: payload.orderLines,
         },
       },
       transactions: {
@@ -49,6 +50,7 @@ const placeStoreOrder = (payload: any): Promise<Order> => {
   });
 };
 
+// TODO: Set transaction status to PAID
 const fulfillStoreOrder = async (
   storeId: number,
   orderId: number
@@ -61,11 +63,11 @@ const fulfillStoreOrder = async (
       store_id: storeId,
     },
     include: {
-      orderProducts: {
+      orderLines: {
         include: {
           product: {
             include: {
-              storeProducts: {
+              inventory: {
                 take: 1,
               },
             },
@@ -76,22 +78,22 @@ const fulfillStoreOrder = async (
   });
 
   const insufficientQuantityProducts = [];
-  const updatedStoreProducts = [];
+  const updatedInventory = [];
 
-  for (const orderProduct of order.orderProducts) {
+  for (const orderLine of order.orderLines) {
     if (
-      orderProduct.product.storeProducts[0].quantity_stocked <
-      orderProduct.quantity_ordered
+      orderLine.product.inventory[0].quantity_stocked <
+      orderLine.quantity_ordered
     ) {
-      insufficientQuantityProducts.push(orderProduct.product);
+      insufficientQuantityProducts.push(orderLine.product);
     } else {
-      updatedStoreProducts.push({
-        id: orderProduct.product.storeProducts[0].id,
-        product_id: orderProduct.product.id,
-        store_id: orderProduct.product.storeProducts[0].store_id,
+      updatedInventory.push({
+        id: orderLine.product.inventory[0].id,
+        product_id: orderLine.product.id,
+        store_id: orderLine.product.inventory[0].store_id,
         quantity_stocked:
-          orderProduct.product.storeProducts[0].quantity_stocked -
-          orderProduct.quantity_ordered,
+          orderLine.product.inventory[0].quantity_stocked -
+          orderLine.quantity_ordered,
       });
     }
   }
@@ -100,13 +102,13 @@ const fulfillStoreOrder = async (
     return "Limited quantity available for product(s)...";
   } else {
     await Promise.all(
-      updatedStoreProducts.map((storeProduct) => {
-        return prisma.storeProduct.update({
+      updatedInventory.map((inventoryItem) => {
+        return prisma.inventory.update({
           where: {
-            id: storeProduct.id,
+            id: inventoryItem.id,
           },
           data: {
-            quantity_stocked: storeProduct.quantity_stocked,
+            quantity_stocked: inventoryItem.quantity_stocked,
           },
         });
       })

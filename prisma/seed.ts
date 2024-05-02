@@ -3,7 +3,7 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 async function main() {
-  await prisma.role.createMany({
+  await prisma.userRole.createMany({
     data: [
       {
         key: "CUSTOMER",
@@ -11,91 +11,65 @@ async function main() {
       },
       {
         key: "OWNER",
-        description: "User who owns a store.",
-      },
-      {
-        key: "SUPPLIER",
-        description: "User who supplies products for a store.",
+        description: "User who runs a store.",
       },
     ],
   });
 
-  await prisma.user.createMany({
+  await prisma.storeType.createMany({
     data: [
       {
-        name: "Bob",
-        email: "bob@example.com",
-        role_key: "CUSTOMER",
+        key: "STORE",
+        description: "Store that customers purchase products from.",
       },
       {
-        name: "Roger",
-        email: "roger@example.com",
-        role_key: "OWNER",
-      },
-      {
-        name: "Hudson",
-        email: "hudson@example.com",
-        role_key: "SUPPLIER",
+        key: "VENDOR",
+        description: "Store that supplies products to a store.",
       },
     ],
+  });
+
+  await prisma.user.create({
+    data: {
+      name: "Bob",
+      email: "bob@example.com",
+      user_role_key: "CUSTOMER",
+      address: {
+        create: {
+          unit_number: 987,
+          address_line1: "Sesame Street",
+          postal_code: "Z9Y8X7",
+          city: "Edmonton",
+          country: "Canada",
+        },
+      },
+    },
   });
 
   await prisma.store.create({
     data: {
-      name: "Power Up Fitness",
-      storeProducts: {
+      name: "Real Good Beverage Co.",
+      email: "contact@realgoodbeverage.com",
+      store_type_key: "STORE",
+      address: {
+        create: {
+          unit_number: 123,
+          address_line1: "Sesame Street",
+          postal_code: "A1B2C3",
+          city: "Edmonton",
+          country: "Canada",
+        },
+      },
+      inventory: {
         create: [
           {
             quantity_stocked: 5,
             product: {
               create: {
-                name: "Resistance Superbands",
-                price: 499,
-              },
-            },
-          },
-          {
-            quantity_stocked: 5,
-            product: {
-              create: {
-                name: "Deluxe Floor Mat",
-                price: 999,
-              },
-            },
-          },
-          {
-            quantity_stocked: 5,
-            product: {
-              create: {
-                name: "Medium Density Foam Roller (Black)",
-                price: 1199,
-              },
-            },
-          },
-          {
-            quantity_stocked: 5,
-            product: {
-              create: {
-                name: "Spikey Massage Ball (8.5 CM)",
-                price: 699,
-              },
-            },
-          },
-          {
-            quantity_stocked: 5,
-            product: {
-              create: {
-                name: "Power Medicine Balls",
-                price: 2999,
-              },
-            },
-          },
-          {
-            quantity_stocked: 5,
-            product: {
-              create: {
-                name: "Adjustable Skipping Rope",
-                price: 1499,
+                name: "Lemonade",
+                description:
+                  "A refreshing glass of freshly squeezed lemons, cane sugar, and ice-cold water.",
+                price: 99,
               },
             },
           },
@@ -112,9 +86,9 @@ async function main() {
           "An order placed by a customer to purchase a product from a store.",
       },
       {
-        key: "SUPPLIER_ORDER",
+        key: "PURCHASE_ORDER",
         description:
-          "An order placed by an owner to purchase a product from a supplier.",
+          "An order placed by an owner to purchase a product from a vendor.",
       },
     ],
   });
