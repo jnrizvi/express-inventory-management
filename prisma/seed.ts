@@ -33,7 +33,11 @@ async function main() {
     data: {
       name: "Bob",
       email: "bob@example.com",
-      user_role_key: "CUSTOMER",
+      userRole: {
+        connect: {
+          key: "CUSTOMER",
+        },
+      },
       address: {
         create: {
           unit_number: 987,
@@ -50,7 +54,11 @@ async function main() {
     data: {
       name: "Real Good Beverage Co.",
       email: "contact@realgoodbeverage.com",
-      store_type_key: "STORE",
+      storeType: {
+        connect: {
+          key: "STORE",
+        },
+      },
       address: {
         create: {
           unit_number: 123,
