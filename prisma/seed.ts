@@ -89,7 +89,7 @@ async function main() {
   await prisma.orderType.createMany({
     data: [
       {
-        key: "CUSTOMER_ORDER",
+        key: "SALES_ORDER",
         description:
           "An order placed by a customer to purchase a product from a store.",
       },

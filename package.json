@@ -1,5 +1,5 @@
 {
-  "name": "express-point-of-sale",
+  "name": "express-inventory-management",
   "version": "1.0.0",
   "description": "",
   "main": "src/index.ts",

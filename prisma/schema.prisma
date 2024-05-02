@@ -142,10 +142,11 @@ model Product {
 }
 
 model Inventory {
-  id               Int @id @default(autoincrement())
-  product_id       Int
-  store_id         Int
-  quantity_stocked Int
+  id                Int @id @default(autoincrement())
+  product_id        Int
+  store_id          Int
+  quantity_stocked  Int
+  quantity_reserved Int @default(0)
 
   product Product @relation(fields: [product_id], references: [id])
   store   Store   @relation(fields: [store_id], references: [id])

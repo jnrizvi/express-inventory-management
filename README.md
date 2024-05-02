@@ -1,1 +1,1 @@
-# express-point-of-sale
+# express-inventory-management

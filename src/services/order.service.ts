@@ -31,23 +31,71 @@ const specificStoreOrder = (
 
 // TODO: Use a data transfer object instead of the prisma type. Also type.
 // TODO: Should not be able to place the order if products are not in stock
-// TODO: Create transaction record. Transaction status should be PENDING.
-const placeStoreOrder = (payload: any): Promise<Order> => {
-  return prisma.order.create({
-    data: {
-      ...payload.order,
-      orderLines: {
-        createMany: {
-          data: payload.orderLines,
-        },
-      },
-      transactions: {
-        createMany: {
-          data: payload.transactions,
-        },
-      },
+const placeSalesOrder = async (storeId: number, payload: any) => {
+  const matchingInventory = await prisma.inventory.findFirst({
+    where: {
+      store_id: storeId,
+      product_id: payload.productId,
+    },
+    include: {
+      product: true,
     },
   });
+
+  if (
+    matchingInventory &&
+    matchingInventory.quantity_stocked >= payload.quantity
+  ) {
+    await prisma.inventory.update({
+      where: {
+        id: matchingInventory.id,
+      },
+      data: {
+        quantity_reserved:
+          matchingInventory.quantity_reserved + payload.quantity,
+        quantity_stocked: matchingInventory.quantity_stocked - payload.quantity,
+      },
+    });
+
+    await prisma.order.create({
+      data: {
+        user_id: payload.userId,
+        store_id: storeId,
+        order_status_key: "OPEN",
+        order_type_key: "SALES_ORDER",
+        orderLines: {
+          create: {
+            quantity_ordered: payload.quantity,
+            unit_price: matchingInventory.product.price,
+            product: {
+              connect: {
+                id: payload.productId,
+              },
+            },
+          },
+        },
+        transactions: {
+          create: {
+            transaction_status_key: "PENDING",
+            transaction_type_key: "SALE",
+            transaction_method_key: "CASH_ON_DELIVERY",
+            amount: matchingInventory.product.price * payload.quantity,
+          },
+        },
+      },
+    });
+
+    return { message: "Your order was successfully placed." };
+  } else if (
+    matchingInventory &&
+    matchingInventory.quantity_stocked < payload.quantity
+  ) {
+    return {
+      message: `Only ${matchingInventory.quantity_stocked} unit(s) are in stock for the product "${matchingInventory.product.name}".`,
+    };
+  } else {
+    return { message: "The specified product is not available at this store." };
+  }
 };
 
 // TODO: Set transaction status to PAID
@@ -130,6 +178,6 @@ const fulfillStoreOrder = async (
 export default {
   allStoreOrders,
   specificStoreOrder,
-  placeStoreOrder,
+  placeSalesOrder,
   fulfillStoreOrder,
 };

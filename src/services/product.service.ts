@@ -5,7 +5,7 @@ import prisma from "../client";
 const allStoreProducts = async (storeId: number): Promise<Product[]> => {
   return prisma.product.findMany({
     where: {
-      storeProducts: {
+      inventory: {
         every: {
           store_id: storeId,
         },
@@ -22,7 +22,7 @@ const specificStoreProduct = async (
   return prisma.product.findUniqueOrThrow({
     where: {
       id: productId,
-      storeProducts: {
+      inventory: {
         every: {
           store_id: storeId,
           product_id: productId,

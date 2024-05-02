@@ -8,7 +8,7 @@ router.get(
   "/store/:storeId/order/:orderId",
   orderController.specificStoreOrder
 );
-router.post("/store/:storeId/order", orderController.placeStoreOrder);
+router.post("/store/:storeId/order", orderController.placeSalesOrder);
 router.put("/store/:storeId/order/:orderId", orderController.fulfillStoreOrder);
 
 export default router;
