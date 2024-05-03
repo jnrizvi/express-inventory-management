@@ -1,4 +1,4 @@
-import { Order } from "@prisma/client";
+import { Order, Prisma } from "@prisma/client";
 import prisma from "../client";
 
 // TODO: Use a data transfer object instead of the prisma type
@@ -32,69 +32,115 @@ const specificStoreOrder = (
 // TODO: Use a data transfer object instead of the prisma type. Also type.
 // TODO: Should not be able to place the order if products are not in stock
 const placeSalesOrder = async (storeId: number, payload: any) => {
-  const matchingInventory = await prisma.inventory.findFirst({
+  const productQuantityHashMap = new Map<number, number>();
+  for (const product of payload.products) {
+    productQuantityHashMap.set(product.id, product.quantityOrdered);
+  }
+
+  const matchingInventory = await prisma.inventory.findMany({
     where: {
       store_id: storeId,
-      product_id: payload.productId,
+      product_id: { in: payload.products.map((product: any) => product.id) },
     },
     include: {
       product: true,
     },
   });
 
-  if (
-    matchingInventory &&
-    matchingInventory.quantity_stocked >= payload.quantity
-  ) {
-    await prisma.inventory.update({
-      where: {
-        id: matchingInventory.id,
-      },
-      data: {
-        quantity_reserved:
-          matchingInventory.quantity_reserved + payload.quantity,
-        quantity_stocked: matchingInventory.quantity_stocked - payload.quantity,
-      },
-    });
+  if (matchingInventory.length === payload.products.length) {
+    const createOrderLinesData: Prisma.OrderLineCreateManyOrderInput[] = [];
+    const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
+    const insufficientInventory = [];
+    let total: number = 0;
 
-    await prisma.order.create({
-      data: {
-        user_id: payload.userId,
-        store_id: storeId,
-        order_status_key: "OPEN",
-        order_type_key: "SALES_ORDER",
-        orderLines: {
-          create: {
-            quantity_ordered: payload.quantity,
-            unit_price: matchingInventory.product.price,
-            product: {
-              connect: {
-                id: payload.productId,
-              },
+    for (const item of matchingInventory) {
+      const quantityOrdered: number | undefined = productQuantityHashMap.get(
+        item.product_id
+      );
+
+      if (quantityOrdered && item.quantity_stocked >= quantityOrdered) {
+        createOrderLinesData.push({
+          quantity_ordered: quantityOrdered,
+          unit_price: item.product.price,
+          product_id: item.product_id,
+        });
+
+        updateInventoryArgs.push({
+          where: { id: item.id },
+          data: {
+            quantity_reserved: item.quantity_reserved + quantityOrdered,
+            quantity_stocked: item.quantity_stocked - quantityOrdered,
+          },
+        });
+
+        total += item.product.price * quantityOrdered;
+      } else {
+        insufficientInventory.push(item);
+      }
+    }
+
+    if (insufficientInventory.length) {
+      return {
+        message: `Insufficient stock for ${
+          insufficientInventory.length
+        } product(s):
+        ${insufficientInventory.map(
+          (item) => `${item.product.name} (${item.quantity_stocked} in stock)`
+        )}
+        `,
+        order: null,
+      };
+    }
+
+    return prisma.$transaction(async (trx) => {
+      await Promise.all(
+        updateInventoryArgs.map((args) => trx.inventory.update(args))
+      );
+
+      const order = await trx.order.create({
+        data: {
+          user_id: payload.userId,
+          store_id: storeId,
+          order_status_key: "OPEN",
+          order_type_key: "SALES_ORDER",
+          orderLines: {
+            createMany: {
+              data: createOrderLinesData,
+            },
+          },
+          transactions: {
+            create: {
+              transaction_status_key: "PENDING",
+              transaction_type_key: "SALE",
+              transaction_method_key: "CASH_ON_DELIVERY",
+              amount: total,
             },
           },
         },
-        transactions: {
-          create: {
-            transaction_status_key: "PENDING",
-            transaction_type_key: "SALE",
-            transaction_method_key: "CASH_ON_DELIVERY",
-            amount: matchingInventory.product.price * payload.quantity,
+        include: {
+          transactions: true,
+          orderLines: {
+            include: {
+              product: true,
+            },
           },
+          store: {
+            include: {
+              address: true,
+            },
+          },
+          user: true,
         },
-      },
-    });
+      });
 
-    return { message: "Your order was successfully placed." };
-  } else if (
-    matchingInventory &&
-    matchingInventory.quantity_stocked < payload.quantity
-  ) {
-    return {
-      message: `Only ${matchingInventory.quantity_stocked} unit(s) are in stock for the product "${matchingInventory.product.name}".`,
-    };
+      return { message: "Sales order was successfully placed.", order: order };
+    });
   } else {
-    return { message: "The specified product is not available at this store." };
+    return {
+      message:
+        "Request includes product(s) that are currently unavailable at this store.",
+      order: null,
+    };
   }
 };
 
