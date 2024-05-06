@@ -27,17 +27,19 @@ const specificStoreOrder = async (req: Request, res: Response) => {
 // Should I not return anything?
 const placeSalesOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
+  // TODO: userId should come from some user auth service, not payload.
+  const userId = +req.body.userId;
   const payload = req.body;
 
-  const order = await orderService.placeSalesOrder(storeId, payload);
+  const order = await orderService.placeSalesOrder(storeId, userId, payload);
   res.send(order);
 };
 
-const fulfillStoreOrder = async (req: Request, res: Response) => {
+const fulfillSalesOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const orderId = +req.params.orderId;
 
-  const order = await orderService.fulfillStoreOrder(storeId, orderId);
+  const order = await orderService.fulfillSalesOrder(storeId, orderId);
   res.send(order);
 };
 
@@ -45,5 +47,5 @@ export default {
   allStoreOrders,
   specificStoreOrder,
   placeSalesOrder,
-  fulfillStoreOrder,
+  fulfillSalesOrder,
 };

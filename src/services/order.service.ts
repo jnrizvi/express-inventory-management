@@ -30,8 +30,11 @@ const specificStoreOrder = (
 };
 
 // TODO: Use a data transfer object instead of the prisma type. Also type.
-// TODO: Should not be able to place the order if products are not in stock
-const placeSalesOrder = async (storeId: number, payload: any) => {
+const placeSalesOrder = async (
+  storeId: number,
+  userId: number,
+  payload: any
+) => {
   const productQuantityHashMap = new Map<number, number>();
   for (const product of payload.products) {
     productQuantityHashMap.set(product.id, product.quantityOrdered);
@@ -99,7 +102,7 @@ const placeSalesOrder = async (storeId: number, payload: any) => {
 
       const order = await trx.order.create({
         data: {
-          user_id: payload.userId,
+          user_id: userId,
           store_id: storeId,
           order_status_key: "OPEN",
           order_type_key: "SALES_ORDER",
@@ -144,80 +147,121 @@ const placeSalesOrder = async (storeId: number, payload: any) => {
   }
 };
 
-// TODO: Set transaction status to PAID
-const fulfillStoreOrder = async (
-  storeId: number,
-  orderId: number
-): Promise<Order | string> => {
-  // I don't know if Prisma will inner join, that's why I'm doing it like this...
-  // I would rather not index by 0 in the code below.
-  const order = await prisma.order.findUniqueOrThrow({
+// TODO: Types
+const fulfillSalesOrder = async (storeId: number, orderId: number) => {
+  const order = await prisma.order.findUnique({
     where: {
       id: orderId,
-      store_id: storeId,
     },
     include: {
-      orderLines: {
-        include: {
-          product: {
-            include: {
-              inventory: {
-                take: 1,
-              },
-            },
-          },
-        },
-      },
+      orderLines: true,
     },
   });
 
-  const insufficientQuantityProducts = [];
-  const updatedInventory = [];
-
-  for (const orderLine of order.orderLines) {
-    if (
-      orderLine.product.inventory[0].quantity_stocked <
-      orderLine.quantity_ordered
-    ) {
-      insufficientQuantityProducts.push(orderLine.product);
-    } else {
-      updatedInventory.push({
-        id: orderLine.product.inventory[0].id,
-        product_id: orderLine.product.id,
-        store_id: orderLine.product.inventory[0].store_id,
-        quantity_stocked:
-          orderLine.product.inventory[0].quantity_stocked -
-          orderLine.quantity_ordered,
-      });
-    }
-  }
-
-  if (insufficientQuantityProducts.length) {
-    return "Limited quantity available for product(s)...";
+  if (
+    order?.order_status_key !== "OPEN" ||
+    order?.order_type_key !== "SALES_ORDER"
+  ) {
+    return {
+      message:
+        "The specified sales order does not exist or cannot be fulfilled.",
+      order: order,
+    };
   } else {
-    await Promise.all(
-      updatedInventory.map((inventoryItem) => {
-        return prisma.inventory.update({
-          where: {
-            id: inventoryItem.id,
-          },
-          data: {
-            quantity_stocked: inventoryItem.quantity_stocked,
-          },
-        });
-      })
-    );
+    const productQuantityHashMap = new Map<number, number>();
+    for (const orderLine of order.orderLines) {
+      productQuantityHashMap.set(
+        orderLine.product_id,
+        orderLine.quantity_ordered
+      );
+    }
 
-    return prisma.order.update({
+    const matchingInventory = await prisma.inventory.findMany({
       where: {
-        id: orderId,
         store_id: storeId,
-        order_status_key: "OPEN",
+        product_id: {
+          in: order.orderLines.map((orderLine) => orderLine.product_id),
+        },
       },
-      data: {
-        order_status_key: "ARCHIVED",
+      include: {
+        product: true,
       },
     });
+
+    if (matchingInventory.length === order.orderLines.length) {
+      const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
+      const insufficientInventory = [];
+
+      for (const item of matchingInventory) {
+        const quantityOrdered: number | undefined = productQuantityHashMap.get(
+          item.product_id
+        );
+
+        if (quantityOrdered && item.quantity_reserved >= quantityOrdered) {
+          updateInventoryArgs.push({
+            where: { id: item.id },
+            data: {
+              quantity_reserved: item.quantity_reserved - quantityOrdered,
+            },
+          });
+        } else {
+          insufficientInventory.push(item);
+        }
+      }
+
+      if (insufficientInventory.length) {
+        return {
+          message: `Insufficient stock for ${
+            insufficientInventory.length
+          } product(s):
+        ${insufficientInventory.map(
+          (item) => `${item.product.name} (${item.quantity_stocked} in stock)`
+        )}
+        `,
+          order: null,
+        };
+      }
+
+      return prisma.$transaction(async (trx) => {
+        await Promise.all(
+          updateInventoryArgs.map((args) => trx.inventory.update(args))
+        );
+
+        const order = await trx.order.update({
+          where: {
+            id: orderId,
+          },
+          data: {
+            order_status_key: "ARCHIVED",
+          },
+          include: {
+            transactions: true,
+            orderLines: {
+              include: {
+                product: true,
+              },
+            },
+            store: {
+              include: {
+                address: true,
+              },
+            },
+            user: true,
+          },
+        });
+
+        return {
+          message: "Sales order was successfully fulfilled.",
+          order: order,
+        };
+      });
+    } else {
+      return {
+        message:
+          "Sales order includes product(s) that are currently unavailable at this store.",
+        order: null,
+      };
+    }
   }
 };
 
@@ -225,5 +269,5 @@ export default {
   allStoreOrders,
   specificStoreOrder,
   placeSalesOrder,
-  fulfillStoreOrder,
+  fulfillSalesOrder,
 };
