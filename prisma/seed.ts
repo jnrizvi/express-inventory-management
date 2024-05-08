@@ -19,7 +19,7 @@ async function main() {
   await prisma.storeType.createMany({
     data: [
       {
-        key: "STORE",
+        key: "SHOP",
         description: "Store that customers purchase products from.",
       },
       {
