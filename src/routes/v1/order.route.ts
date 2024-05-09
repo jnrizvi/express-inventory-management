@@ -3,27 +3,77 @@ import { orderController } from "../../controllers";
 
 const router = express.Router();
 
-/*
-orders management (12)
-  sales management
-  - CRUD sales orders
+// Return all sales orders for a specific shop
+router.get("/shops/:storeId/sales-orders", orderController.allSalesOrders);
 
-  purchases management
-  - CRUD purchase orders
-
-  transfers management
-  - CRUD transfer orders
-*/
-
-router.get("/stores/:storeId/orders", orderController.allStoreOrders);
+// Return a specific sales order for a specific shop
 router.get(
-  "/stores/:storeId/orders/:orderId",
-  orderController.specificStoreOrder
+  "/shops/:storeId/sales-orders/:orderId",
+  orderController.specificSalesOrder
 );
-router.post("/stores/:storeId/orders", orderController.placeSalesOrder);
+
+// Create a new sales order for a specific shop
+router.post("/shops/:storeId/sales-orders", orderController.placeSalesOrder);
+
+// Update a sales order for a specific shop
 router.put(
-  "/stores/:storeId/orders/:orderId",
-  orderController.fulfillSalesOrder
+  "/shops/:storeId/sales-orders/:orderId",
+  orderController.processSalesOrder
+);
+
+// Delete a sales order for a specific shop
+router.delete("/shops/:storeId/sales-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Return all purchase orders for a specific vendor
+router.get("/vendors/:storeId/purchase-orders", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Return a specific purchase order for a specific vendor
+router.get("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Create a new purchase order for a specific vendor
+router.post("/vendors/:storeId/purchase-orders", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Update a purchase order for a specific vendor
+router.put("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Delete a purchase order for a specific vendor
+router.delete("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Return all transfer orders for a specific shop
+router.get("/shops/:storeId/transfer-orders", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Return a specific transfer order for a specific shop
+router.get("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Create a new transfer order for a specific shop
+router.post("/shops/:storeId/transfer-orders", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Update a transfer order for a specific shop
+router.put("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
+);
+
+// Delete a transfer order for a specific shop
+router.delete("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
+  res.send("Not implemented")
 );
 
 export default router;

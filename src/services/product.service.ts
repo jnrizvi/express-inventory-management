@@ -2,7 +2,7 @@ import { Product } from "@prisma/client";
 import prisma from "../client";
 
 // TODO: Use a data transfer object instead of the prisma type
-const allStoreProducts = async (storeId: number): Promise<Product[]> => {
+const allShopProducts = (storeId: number): Promise<Product[]> => {
   return prisma.product.findMany({
     where: {
       inventory: {
@@ -15,7 +15,7 @@ const allStoreProducts = async (storeId: number): Promise<Product[]> => {
 };
 
 // TODO: Use a data transfer object instead of the prisma type
-const specificStoreProduct = async (
+const specificShopProduct = (
   storeId: number,
   productId: number
 ): Promise<Product> => {
@@ -33,6 +33,6 @@ const specificStoreProduct = async (
 };
 
 export default {
-  allStoreProducts,
-  specificStoreProduct,
+  allShopProducts,
+  specificShopProduct,
 };
