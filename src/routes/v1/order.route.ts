@@ -15,12 +15,15 @@ orders management (12)
   - CRUD transfer orders
 */
 
-router.get("/store/:storeId/orders", orderController.allStoreOrders);
+router.get("/stores/:storeId/orders", orderController.allStoreOrders);
 router.get(
-  "/store/:storeId/order/:orderId",
+  "/stores/:storeId/orders/:orderId",
   orderController.specificStoreOrder
 );
-router.post("/store/:storeId/order", orderController.placeSalesOrder);
-router.put("/store/:storeId/order/:orderId", orderController.fulfillSalesOrder);
+router.post("/stores/:storeId/orders", orderController.placeSalesOrder);
+router.put(
+  "/stores/:storeId/orders/:orderId",
+  orderController.fulfillSalesOrder
+);
 
 export default router;
