@@ -2,36 +2,43 @@ import { Order, Prisma } from "@prisma/client";
 import prisma from "../client";
 
 // TODO: Use a data transfer object instead of the prisma type
-const allSalesOrders = (
+const allOrders = (
   storeId: number,
+  orderType: string,
   orderStatus: string | null
 ): Promise<Order[]> => {
   return prisma.order.findMany({
     where: {
       store_id: storeId,
+      order_type_key: orderType,
       ...(orderStatus && { order_status_key: orderStatus }),
     },
   });
 };
 
 // TODO: Use a data transfer object instead of the prisma type
-const specificSalesOrder = (
+const specificOrder = (
   storeId: number,
-  orderId: number
+  orderId: number,
+  orderType: string
 ): Promise<Order> => {
   return prisma.order.findUniqueOrThrow({
     where: {
       id: orderId,
       store_id: storeId,
+      order_type_key: orderType,
     },
   });
 };
 
 // TODO: Use a data transfer object instead of the prisma type. Also type.
-const placeSalesOrder = async (
+// TODO: Validate whether the user has permission to place the order
+// TODO: Validate whether the store ID points to the right store
+const placeOrder = async (
   storeId: number,
   userId: number,
-  payload: any
+  payload: any,
+  orderType: string
 ) => {
   const productQuantityHashMap = new Map<number, number>();
   for (const product of payload.products) {
@@ -103,7 +110,7 @@ const placeSalesOrder = async (
           user_id: userId,
           store_id: storeId,
           order_status_key: "OPEN",
-          order_type_key: "SALES_ORDER",
+          order_type_key: orderType,
           orderLines: {
             createMany: {
               data: createOrderLinesData,
@@ -113,7 +120,7 @@ const placeSalesOrder = async (
             create: {
               transaction_status_key: "PENDING",
               transaction_type_key: "SALE",
-              transaction_method_key: "CASH_ON_DELIVERY",
+              transaction_method_key: payload.transactionMethod,
               amount: total,
             },
           },
@@ -134,7 +141,7 @@ const placeSalesOrder = async (
         },
       });
 
-      return { message: "Sales order was successfully placed.", order: order };
+      return { message: "Order was successfully placed.", order: order };
     });
   } else {
     return {
@@ -146,7 +153,11 @@ const placeSalesOrder = async (
 };
 
 // TODO: Types
-const processSalesOrder = async (storeId: number, orderId: number) => {
+const processOrder = async (
+  storeId: number,
+  orderId: number,
+  orderType: string
+) => {
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
@@ -158,11 +169,10 @@ const processSalesOrder = async (storeId: number, orderId: number) => {
 
   if (
     order?.order_status_key !== "OPEN" ||
-    order?.order_type_key !== "SALES_ORDER"
+    order?.order_type_key !== orderType
   ) {
     return {
-      message:
-        "The specified sales order does not exist or cannot be fulfilled.",
+      message: "The specified order does not exist or cannot be fulfilled.",
       order: order,
     };
   } else {
@@ -249,14 +259,14 @@ const processSalesOrder = async (storeId: number, orderId: number) => {
         });
 
         return {
-          message: "Sales order was successfully fulfilled.",
+          message: "Order was successfully fulfilled.",
           order: order,
         };
       });
     } else {
       return {
         message:
-          "Sales order includes product(s) that are currently unavailable at this store.",
+          "Order includes product(s) that are currently unavailable at this store.",
         order: null,
       };
     }
@@ -264,8 +274,8 @@ const processSalesOrder = async (storeId: number, orderId: number) => {
 };
 
 export default {
-  allSalesOrders,
-  specificSalesOrder,
-  placeSalesOrder,
-  processSalesOrder,
+  allOrders,
+  specificOrder,
+  placeOrder,
+  processOrder,
 };

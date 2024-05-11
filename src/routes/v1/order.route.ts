@@ -27,18 +27,21 @@ router.delete("/shops/:storeId/sales-orders/:orderId", (_, res) =>
 );
 
 // Return all purchase orders for a specific vendor
-router.get("/vendors/:storeId/purchase-orders", (_, res) =>
-  res.send("Not implemented")
+router.get(
+  "/vendors/:storeId/purchase-orders",
+  orderController.allPurchaseOrders
 );
 
 // Return a specific purchase order for a specific vendor
-router.get("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
+router.get(
+  "/vendors/:storeId/purchase-orders/:orderId",
+  orderController.specificPurchaseOrder
 );
 
 // Create a new purchase order for a specific vendor
-router.post("/vendors/:storeId/purchase-orders", (_, res) =>
-  res.send("Not implemented")
+router.post(
+  "/vendors/:storeId/purchase-orders",
+  orderController.placePurchaseOrder
 );
 
 // Update a purchase order for a specific vendor
