@@ -1,4 +1,4 @@
-import { Order, Prisma } from "@prisma/client";
+import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
 
 // TODO: Use a data transfer object instead of the prisma type
@@ -40,69 +40,31 @@ const placeOrder = async (
   payload: any,
   orderType: string
 ) => {
-  const productQuantityHashMap = new Map<number, number>();
-  for (const product of payload.products) {
-    productQuantityHashMap.set(product.id, product.quantityOrdered);
-  }
+  const result = await verifyQuantity(
+    storeId,
+    payload.order_lines,
+    "quantity_stocked"
+  );
 
-  const matchingInventory = await prisma.inventory.findMany({
-    where: {
-      store_id: storeId,
-      product_id: { in: payload.products.map((product: any) => product.id) },
-    },
-    include: {
-      product: true,
-    },
-  });
-
-  if (matchingInventory.length === payload.products.length) {
-    const createOrderLinesData: Prisma.OrderLineCreateManyOrderInput[] = [];
-    const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
-    const insufficientInventory = [];
-    let total: number = 0;
-
-    for (const item of matchingInventory) {
-      const quantityOrdered: number | undefined = productQuantityHashMap.get(
-        item.product_id
-      );
-
-      if (quantityOrdered && item.quantity_stocked >= quantityOrdered) {
-        createOrderLinesData.push({
-          quantity_ordered: quantityOrdered,
-          unit_price: item.product.price,
-          product_id: item.product_id,
-        });
-
-        updateInventoryArgs.push({
-          where: { id: item.id },
-          data: {
-            quantity_reserved: item.quantity_reserved + quantityOrdered,
-            quantity_stocked: item.quantity_stocked - quantityOrdered,
-          },
-        });
-
-        total += item.product.price * quantityOrdered;
-      } else {
-        insufficientInventory.push(item);
-      }
-    }
-
-    if (insufficientInventory.length) {
-      return {
-        message: `Insufficient stock for ${
-          insufficientInventory.length
-        } product(s):
-        ${insufficientInventory.map(
-          (item) => `${item.product.name} (${item.quantity_stocked} in stock)`
-        )}
-        `,
-        order: null,
-      };
-    }
-
+  if (typeof result === "string") {
+    return {
+      message: "Order could not be placed.",
+      order: null,
+    };
+  } else {
     return prisma.$transaction(async (trx) => {
       await Promise.all(
-        updateInventoryArgs.map((args) => trx.inventory.update(args))
+        result.map((item) =>
+          trx.inventory.update({
+            where: {
+              id: item.inventoryId,
+            },
+            data: {
+              quantity_reserved: item.quantityReserved + item.quantityOrdered,
+              quantity_stocked: item.quantityStocked - item.quantityOrdered,
+            },
+          })
+        )
       );
 
       const order = await trx.order.create({
@@ -113,7 +75,13 @@ const placeOrder = async (
           order_type_key: orderType,
           orderLines: {
             createMany: {
-              data: createOrderLinesData,
+              data: result.map((item): Prisma.OrderLineCreateManyOrderInput => {
+                return {
+                  product_id: item.productId,
+                  quantity_ordered: item.quantityOrdered,
+                  unit_price: item.unitPrice,
+                };
+              }),
             },
           },
           transactions: {
@@ -121,7 +89,12 @@ const placeOrder = async (
               transaction_status_key: "PENDING",
               transaction_type_key: "SALE",
               transaction_method_key: payload.transactionMethod,
-              amount: total,
+              amount: result.reduce((accumulator, currentItem) => {
+                return (
+                  accumulator +
+                  currentItem.quantityOrdered * currentItem.unitPrice
+                );
+              }, 0),
             },
           },
         },
@@ -143,12 +116,6 @@ const placeOrder = async (
 
       return { message: "Order was successfully placed.", order: order };
     });
-  } else {
-    return {
-      message:
-        "Request includes product(s) that are currently unavailable at this store.",
-      order: null,
-    };
   }
 };
 
@@ -176,63 +143,30 @@ const processOrder = async (
       order: order,
     };
   } else {
-    const productQuantityHashMap = new Map<number, number>();
-    for (const orderLine of order.orderLines) {
-      productQuantityHashMap.set(
-        orderLine.product_id,
-        orderLine.quantity_ordered
-      );
-    }
+    const result = await verifyQuantity(
+      storeId,
+      order.orderLines,
+      "quantity_reserved"
+    );
 
-    const matchingInventory = await prisma.inventory.findMany({
-      where: {
-        store_id: storeId,
-        product_id: {
-          in: order.orderLines.map((orderLine) => orderLine.product_id),
-        },
-      },
-      include: {
-        product: true,
-      },
-    });
-
-    if (matchingInventory.length === order.orderLines.length) {
-      const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
-      const insufficientInventory = [];
-
-      for (const item of matchingInventory) {
-        const quantityOrdered: number | undefined = productQuantityHashMap.get(
-          item.product_id
-        );
-
-        if (quantityOrdered && item.quantity_reserved >= quantityOrdered) {
-          updateInventoryArgs.push({
-            where: { id: item.id },
-            data: {
-              quantity_reserved: item.quantity_reserved - quantityOrdered,
-            },
-          });
-        } else {
-          insufficientInventory.push(item);
-        }
-      }
-
-      if (insufficientInventory.length) {
-        return {
-          message: `Insufficient stock for ${
-            insufficientInventory.length
-          } product(s):
-        ${insufficientInventory.map(
-          (item) => `${item.product.name} (${item.quantity_stocked} in stock)`
-        )}
-        `,
-          order: null,
-        };
-      }
-
+    if (typeof result === "string") {
+      return {
+        message: "Order could not be processed.",
+        order: order,
+      };
+    } else {
       return prisma.$transaction(async (trx) => {
         await Promise.all(
-          updateInventoryArgs.map((args) => trx.inventory.update(args))
+          result.map((item) =>
+            trx.inventory.update({
+              where: {
+                id: item.inventoryId,
+              },
+              data: {
+                quantity_reserved: item.quantityReserved - item.quantityOrdered,
+              },
+            })
+          )
         );
 
         const order = await trx.order.update({
@@ -259,18 +193,88 @@ const processOrder = async (
         });
 
         return {
-          message: "Order was successfully fulfilled.",
+          message: "Order was successfully processed.",
           order: order,
         };
       });
-    } else {
-      return {
-        message:
-          "Order includes product(s) that are currently unavailable at this store.",
-        order: null,
-      };
     }
   }
+};
+
+// TODO: Figure out how to do the error handling properly
+const verifyQuantity = async (
+  storeId: number,
+  orderLines: OrderLine[],
+  quantityType: string
+) => {
+  const productQuantityHashMap = new Map<number, number>();
+  for (const orderLine of orderLines) {
+    productQuantityHashMap.set(
+      orderLine.product_id,
+      orderLine.quantity_ordered
+    );
+  }
+
+  const matchingInventory = await prisma.inventory.findMany({
+    where: {
+      store_id: storeId,
+      product_id: {
+        in: orderLines.map((orderLine) => orderLine.product_id),
+      },
+    },
+    include: {
+      product: true,
+    },
+  });
+
+  const arrayOfSomethingDto = [];
+  const unavailableInventory = [];
+  const insufficientInventory = [];
+
+  for (const item of matchingInventory) {
+    const quantityOrdered: number | undefined = productQuantityHashMap.get(
+      item.product_id
+    );
+
+    if (quantityOrdered) {
+      if (
+        (quantityType === "quantity_stocked" &&
+          item.quantity_stocked >= quantityOrdered) ||
+        (quantityType === "quantity_reserved" &&
+          item.quantity_reserved >= quantityOrdered)
+      ) {
+        arrayOfSomethingDto.push({
+          storeId: storeId,
+          productId: item.product_id,
+          inventoryId: item.id,
+          quantityStocked: item.quantity_stocked,
+          quantityReserved: item.quantity_reserved,
+          quantityOrdered: quantityOrdered,
+          unitPrice: item.product.price,
+        });
+      } else {
+        insufficientInventory.push(item);
+      }
+    } else {
+      unavailableInventory.push(item);
+    }
+  }
+
+  if (unavailableInventory.length) {
+    return `${
+      unavailableInventory.length
+    } unavailable product(s): ${unavailableInventory.map(
+      (item) => `${item.product.name}`
+    )}`;
+  } else if (insufficientInventory.length) {
+    return `Insufficient quantity for ${
+      insufficientInventory.length
+    } product(s): ${insufficientInventory.map(
+      (item) => `${item.product.name}`
+    )}`;
+  }
+
+  return arrayOfSomethingDto;
 };
 
 export default {
