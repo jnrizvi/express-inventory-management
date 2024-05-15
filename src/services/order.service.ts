@@ -1,5 +1,6 @@
 import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
+import { SALES_ORDER } from "../util/constants";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
@@ -120,29 +121,18 @@ const placeOrder = async (
 };
 
 // TODO: Types
-const processOrder = async (
-  storeId: number,
-  orderId: number,
-  orderType: string
-) => {
+const fulfillOrder = async (storeId: number, orderId: number) => {
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
+      order_type_key: SALES_ORDER,
     },
     include: {
       orderLines: true,
     },
   });
 
-  if (
-    order?.order_status_key !== "OPEN" ||
-    order?.order_type_key !== orderType
-  ) {
-    return {
-      message: "The specified order does not exist or cannot be fulfilled.",
-      order: order,
-    };
-  } else {
+  if (order && order.order_status_key === "OPEN") {
     const result = await verifyQuantity(
       storeId,
       order.orderLines,
@@ -151,7 +141,7 @@ const processOrder = async (
 
     if (typeof result === "string") {
       return {
-        message: "Order could not be processed.",
+        message: "Order could not be fulfilled.",
         order: order,
       };
     } else {
@@ -193,12 +183,22 @@ const processOrder = async (
         });
 
         return {
-          message: "Order was successfully processed.",
+          message: "Order was successfully fulfilled.",
           order: order,
         };
       });
     }
+  } else {
+    return {
+      message: "The specified order does not exist or cannot be fulfilled.",
+      order: order,
+    };
   }
+};
+
+const receiveOrder = async (orderId: number) => {
+  // Can only receive an order if it has a shipment.
+  // A shipment must be created when placing a purchase order or transfer order.
 };
 
 // TODO: Figure out how to do the error handling properly
@@ -281,5 +281,5 @@ export default {
   allOrders,
   specificOrder,
   placeOrder,
-  processOrder,
+  fulfillOrder,
 };

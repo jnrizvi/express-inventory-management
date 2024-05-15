@@ -1,9 +1,6 @@
 import { Request, Response } from "express";
 import { orderService } from "../services";
-
-// TODO: See if these constants should go somewhere else
-const PURCHASE_ORDER = "PURCHASE_ORDER";
-const SALES_ORDER = "SALES_ORDER";
+import { PURCHASE_ORDER, SALES_ORDER } from "../util/constants";
 
 // Should I not return anything?
 const allSalesOrders = async (req: Request, res: Response) => {
@@ -47,7 +44,7 @@ const processSalesOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const orderId = +req.params.orderId;
 
-  const order = await orderService.processOrder(storeId, orderId, SALES_ORDER);
+  const order = await orderService.fulfillOrder(storeId, orderId);
   res.send(order);
 };
 
