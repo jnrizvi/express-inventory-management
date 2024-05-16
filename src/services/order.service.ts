@@ -196,9 +196,44 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
   }
 };
 
-const receiveOrder = async (orderId: number) => {
+// This storeId parameter indicates the store which the shipment is bound for
+// In general, the storeId parameter always indicates the store attended to by the user
+const receiveOrder = async (storeId: number, orderId: number) => {
+  // Verify storeId parameter by checking if
+  // shipment.address_id = store.address_id where store.id = storeId
+  const receivingStore = await prisma.store.findUniqueOrThrow({
+    where: {
+      id: storeId,
+    },
+    include: {
+      inventory: true,
+    },
+  });
+
+  const matchingShipments = await prisma.shipment.findMany({
+    where: {
+      order_id: orderId,
+      address_id: receivingStore.address_id,
+    },
+    include: {
+      order: {
+        include: {
+          orderLines: true,
+          store: {
+            include: {
+              inventory: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
   // Can only receive an order if it has a shipment.
-  // A shipment must be created when placing a purchase order or transfer order.
+  if (matchingShipments.length === 1) {
+  } else {
+    return "Order does not have a single, terminating shipment at the specified store.";
+  }
 };
 
 // TODO: Figure out how to do the error handling properly

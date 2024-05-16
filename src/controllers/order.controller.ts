@@ -75,6 +75,8 @@ const specificPurchaseOrder = async (req: Request, res: Response) => {
 };
 
 // Should I not return anything?
+// TODO: A shipment must be created when placing a purchase order or transfer order.
+//       placeOrder function can't be used.
 // TODO: userId should come from some user auth service, not request body.
 const placePurchaseOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
