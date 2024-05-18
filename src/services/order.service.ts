@@ -41,31 +41,60 @@ const placeOrder = async (
   payload: any,
   orderType: string
 ) => {
-  const result = await verifyQuantity(
-    storeId,
-    payload.order_lines,
-    "quantity_stocked"
-  );
+  const result = await verifyQuantity(storeId, payload.order_lines);
 
   if (typeof result === "string") {
     return {
-      message: "Order could not be placed.",
+      message: result,
       order: null,
     };
   } else {
+    const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
+    const createOrderLinesData: Prisma.OrderLineCreateManyOrderInput[] = [];
+    const insufficientInventory = [];
+    let total = 0;
+
+    for (const item of result) {
+      if (item.quantityStocked >= item.quantityOrdered) {
+        createOrderLinesData.push({
+          quantity_ordered: item.quantityOrdered,
+          unit_price: item.unitPrice,
+          product_id: item.productId,
+        });
+
+        updateInventoryArgs.push({
+          where: {
+            id: item.inventoryId,
+          },
+          data: {
+            quantity_stocked: item.quantityStocked - item.quantityOrdered,
+            quantity_reserved: item.quantityReserved + item.quantityOrdered,
+          },
+        });
+
+        total += item.unitPrice * item.quantityOrdered;
+      } else {
+        insufficientInventory.push(item);
+      }
+    }
+
+    if (insufficientInventory.length) {
+      return {
+        message: `Insufficient stock for ${
+          insufficientInventory.length
+        } product(s):
+        ${insufficientInventory.map(
+          (item) =>
+            `${item.productName} (Only ${item.quantityStocked} in stock)`
+        )}
+        `,
+        order: null,
+      };
+    }
+
     return prisma.$transaction(async (trx) => {
       await Promise.all(
-        result.map((item) =>
-          trx.inventory.update({
-            where: {
-              id: item.inventoryId,
-            },
-            data: {
-              quantity_reserved: item.quantityReserved + item.quantityOrdered,
-              quantity_stocked: item.quantityStocked - item.quantityOrdered,
-            },
-          })
-        )
+        updateInventoryArgs.map((args) => trx.inventory.update(args))
       );
 
       const order = await trx.order.create({
@@ -76,13 +105,7 @@ const placeOrder = async (
           order_type_key: orderType,
           orderLines: {
             createMany: {
-              data: result.map((item): Prisma.OrderLineCreateManyOrderInput => {
-                return {
-                  product_id: item.productId,
-                  quantity_ordered: item.quantityOrdered,
-                  unit_price: item.unitPrice,
-                };
-              }),
+              data: createOrderLinesData,
             },
           },
           transactions: {
@@ -90,12 +113,7 @@ const placeOrder = async (
               transaction_status_key: "PENDING",
               transaction_type_key: "SALE",
               transaction_method_key: payload.transactionMethod,
-              amount: result.reduce((accumulator, currentItem) => {
-                return (
-                  accumulator +
-                  currentItem.quantityOrdered * currentItem.unitPrice
-                );
-              }, 0),
+              amount: total,
             },
           },
         },
@@ -133,11 +151,7 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
   });
 
   if (order && order.order_status_key === "OPEN") {
-    const result = await verifyQuantity(
-      storeId,
-      order.orderLines,
-      "quantity_reserved"
-    );
+    const result = await verifyQuantity(storeId, order.orderLines);
 
     if (typeof result === "string") {
       return {
@@ -145,18 +159,38 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
         order: order,
       };
     } else {
+      const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
+      const insufficientInventory = [];
+
+      for (const item of result) {
+        if (item.quantityReserved >= item.quantityOrdered) {
+          updateInventoryArgs.push({
+            where: { id: item.inventoryId },
+            data: {
+              quantity_reserved: item.quantityReserved - item.quantityOrdered,
+            },
+          });
+        } else {
+          insufficientInventory.push(item);
+        }
+      }
+
+      if (insufficientInventory.length) {
+        return {
+          message: `Insufficient reserves for ${
+            insufficientInventory.length
+          } product(s):
+        ${insufficientInventory.map(
+          (item) => `${item.productName} (${item.quantityReserved} reserved)`
+        )}
+        `,
+          order: null,
+        };
+      }
+
       return prisma.$transaction(async (trx) => {
         await Promise.all(
-          result.map((item) =>
-            trx.inventory.update({
-              where: {
-                id: item.inventoryId,
-              },
-              data: {
-                quantity_reserved: item.quantityReserved - item.quantityOrdered,
-              },
-            })
-          )
+          updateInventoryArgs.map((args) => trx.inventory.update(args))
         );
 
         const order = await trx.order.update({
@@ -210,6 +244,7 @@ const receiveOrder = async (storeId: number, orderId: number) => {
     },
   });
 
+  // TODO: change this name
   const matchingShipments = await prisma.shipment.findMany({
     where: {
       order_id: orderId,
@@ -231,17 +266,105 @@ const receiveOrder = async (storeId: number, orderId: number) => {
 
   // Can only receive an order if it has a shipment.
   if (matchingShipments.length === 1) {
+    const result = await verifyQuantity(
+      matchingShipments[0].order.store_id,
+      matchingShipments[0].order.orderLines
+    );
+
+    const receivingStoreResult = await verifyQuantity(
+      storeId,
+      matchingShipments[0].order.orderLines
+    );
+
+    if (
+      typeof result === "string" ||
+      typeof receivingStoreResult === "string"
+    ) {
+      return {
+        message: "Order could not be received.",
+        order: matchingShipments[0].order,
+      };
+    } else {
+      const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
+      const insufficientInventory = [];
+
+      for (const item of result) {
+        if (item.quantityReserved >= item.quantityOrdered) {
+          updateInventoryArgs.push({
+            where: { id: item.inventoryId },
+            data: {
+              quantity_reserved: item.quantityReserved - item.quantityOrdered,
+            },
+          });
+        } else {
+          insufficientInventory.push(item);
+        }
+      }
+
+      for (const item of receivingStoreResult) {
+        updateInventoryArgs.push({
+          where: { id: item.inventoryId },
+          data: {
+            quantity_stocked: item.quantityStocked + item.quantityOrdered,
+          },
+        });
+      }
+
+      if (insufficientInventory.length) {
+        return {
+          message: `Insufficient reserves for ${
+            insufficientInventory.length
+          } product(s):
+        ${insufficientInventory.map(
+          (item) => `${item.productName} (${item.quantityReserved} reserved)`
+        )}
+        `,
+          order: null,
+        };
+      }
+
+      return prisma.$transaction(async (trx) => {
+        await Promise.all(
+          updateInventoryArgs.map((args) => trx.inventory.update(args))
+        );
+
+        const order = await trx.order.update({
+          where: {
+            id: orderId,
+          },
+          data: {
+            order_status_key: "ARCHIVED",
+          },
+          include: {
+            transactions: true,
+            orderLines: {
+              include: {
+                product: true,
+              },
+            },
+            store: {
+              include: {
+                address: true,
+              },
+            },
+            user: true,
+          },
+        });
+
+        return {
+          message: "Order was successfully received.",
+          order: order,
+        };
+      });
+    }
   } else {
     return "Order does not have a single, terminating shipment at the specified store.";
   }
 };
 
+// TODO: Rename function
 // TODO: Figure out how to do the error handling properly
-const verifyQuantity = async (
-  storeId: number,
-  orderLines: OrderLine[],
-  quantityType: string
-) => {
+const verifyQuantity = async (storeId: number, orderLines: OrderLine[]) => {
   const productQuantityHashMap = new Map<number, number>();
   for (const orderLine of orderLines) {
     productQuantityHashMap.set(
@@ -264,7 +387,6 @@ const verifyQuantity = async (
 
   const arrayOfSomethingDto = [];
   const unavailableInventory = [];
-  const insufficientInventory = [];
 
   for (const item of matchingInventory) {
     const quantityOrdered: number | undefined = productQuantityHashMap.get(
@@ -272,24 +394,16 @@ const verifyQuantity = async (
     );
 
     if (quantityOrdered) {
-      if (
-        (quantityType === "quantity_stocked" &&
-          item.quantity_stocked >= quantityOrdered) ||
-        (quantityType === "quantity_reserved" &&
-          item.quantity_reserved >= quantityOrdered)
-      ) {
-        arrayOfSomethingDto.push({
-          storeId: storeId,
-          productId: item.product_id,
-          inventoryId: item.id,
-          quantityStocked: item.quantity_stocked,
-          quantityReserved: item.quantity_reserved,
-          quantityOrdered: quantityOrdered,
-          unitPrice: item.product.price,
-        });
-      } else {
-        insufficientInventory.push(item);
-      }
+      arrayOfSomethingDto.push({
+        storeId: storeId,
+        productId: item.product_id,
+        inventoryId: item.id,
+        quantityStocked: item.quantity_stocked,
+        quantityReserved: item.quantity_reserved,
+        quantityOrdered: quantityOrdered,
+        unitPrice: item.product.price,
+        productName: item.product.name,
+      });
     } else {
       unavailableInventory.push(item);
     }
@@ -299,12 +413,6 @@ const verifyQuantity = async (
     return `${
       unavailableInventory.length
     } unavailable product(s): ${unavailableInventory.map(
-      (item) => `${item.product.name}`
-    )}`;
-  } else if (insufficientInventory.length) {
-    return `Insufficient quantity for ${
-      insufficientInventory.length
-    } product(s): ${insufficientInventory.map(
       (item) => `${item.product.name}`
     )}`;
   }
