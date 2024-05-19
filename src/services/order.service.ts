@@ -65,7 +65,10 @@ const placeOrder = async (
 
         updateInventoryArgs.push({
           where: {
-            id: item.inventoryId,
+            id: {
+              product_id: item.productId,
+              store_id: item.storeId,
+            },
           },
           data: {
             quantity_stocked: item.quantityStocked - item.quantityOrdered,
@@ -194,7 +197,12 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
       for (const item of result) {
         if (item.quantityReserved >= item.quantityOrdered) {
           updateInventoryArgs.push({
-            where: { id: item.inventoryId },
+            where: {
+              id: {
+                product_id: item.productId,
+                store_id: item.storeId,
+              },
+            },
             data: {
               quantity_reserved: item.quantityReserved - item.quantityOrdered,
             },
@@ -263,13 +271,12 @@ const receiveOrder = async (
     },
   });
 
-  // TODO: Define PK on order_id and address_id.
-  //       We don't want a duplicate of order and address combination.
-  //       That will allow us to use findUnique below.
-  const orderShipmentsForReceivingStore = await prisma.shipment.findMany({
+  const shipmentToReceivingStore = await prisma.shipment.findUnique({
     where: {
-      order_id: orderId,
-      address_id: receivingStore.address_id,
+      id: {
+        order_id: orderId,
+        address_id: receivingStore.address_id,
+      },
       order: {
         order_type_key: orderType,
       },
@@ -289,17 +296,15 @@ const receiveOrder = async (
   });
 
   // Can only receive an order if it has a shipment.
-  if (orderShipmentsForReceivingStore.length === 1) {
-    const order = orderShipmentsForReceivingStore[0].order;
-
+  if (shipmentToReceivingStore) {
     const shippingInventory = await matchInventoryWithOrderLines(
-      order.store_id,
-      order.orderLines
+      shipmentToReceivingStore.order.store_id,
+      shipmentToReceivingStore.order.orderLines
     );
 
     const receivingInventory = await matchInventoryWithOrderLines(
       storeId,
-      order.orderLines
+      shipmentToReceivingStore.order.orderLines
     );
 
     if (
@@ -308,7 +313,7 @@ const receiveOrder = async (
     ) {
       return {
         message: "Order could not be received.",
-        order: order,
+        order: shipmentToReceivingStore.order,
       };
     } else {
       const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
@@ -317,7 +322,12 @@ const receiveOrder = async (
       for (const item of shippingInventory) {
         if (item.quantityReserved >= item.quantityOrdered) {
           updateInventoryArgs.push({
-            where: { id: item.inventoryId },
+            where: {
+              id: {
+                product_id: item.productId,
+                store_id: item.storeId,
+              },
+            },
             data: {
               quantity_reserved: item.quantityReserved - item.quantityOrdered,
             },
@@ -329,7 +339,12 @@ const receiveOrder = async (
 
       for (const item of receivingInventory) {
         updateInventoryArgs.push({
-          where: { id: item.inventoryId },
+          where: {
+            id: {
+              product_id: item.productId,
+              store_id: item.storeId,
+            },
+          },
           data: {
             quantity_stocked: item.quantityStocked + item.quantityOrdered,
           },
@@ -370,7 +385,7 @@ const receiveOrder = async (
       });
     }
   } else {
-    return "Order does not have a single, terminating shipment at the receiving store.";
+    return "Order does not have a shipment to the receiving store.";
   }
 };
 
@@ -410,7 +425,6 @@ const matchInventoryWithOrderLines = async (
 
     if (quantityOrdered) {
       inventoryOrdered.push({
-        inventoryId: item.id,
         storeId: storeId,
         productId: item.product_id,
         quantityStocked: item.quantity_stocked,

@@ -72,7 +72,6 @@ model OrderStatus {
 }
 
 model OrderLine {
-  id               Int @id @default(autoincrement())
   order_id         Int
   product_id       Int
   unit_price       Int
@@ -81,6 +80,7 @@ model OrderLine {
   order   Order   @relation(fields: [order_id], references: [id])
   product Product @relation(fields: [product_id], references: [id])
 
+  @@id(name: "id", [order_id, product_id])
   @@map("order_line")
 }
 
@@ -142,7 +142,6 @@ model Product {
 }
 
 model Inventory {
-  id                Int @id @default(autoincrement())
   product_id        Int
   store_id          Int
   quantity_stocked  Int
@@ -151,6 +150,7 @@ model Inventory {
   product Product @relation(fields: [product_id], references: [id])
   store   Store   @relation(fields: [store_id], references: [id])
 
+  @@id(name: "id", [product_id, store_id])
   @@map("inventory")
 }
 
@@ -197,7 +197,6 @@ model Address {
 }
 
 model Shipment {
-  id            Int       @id @default(autoincrement())
   order_id      Int
   address_id    Int
   date_expected DateTime? @db.Timestamptz
@@ -206,5 +205,6 @@ model Shipment {
   order   Order   @relation(fields: [order_id], references: [id])
   address Address @relation(fields: [address_id], references: [id])
 
+  @@id(name: "id", [order_id, address_id])
   @@map("shipment")
 }
