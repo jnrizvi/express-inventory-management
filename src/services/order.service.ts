@@ -1,6 +1,6 @@
 import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
-import { SALES_ORDER } from "../util/constants";
+import { SALES_ORDER, SHOP, TRANSFER_ORDER } from "../util/constants";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
@@ -33,15 +33,16 @@ const specificOrder = (
 };
 
 // TODO: Use a data transfer object instead of the prisma type. Also type.
-// TODO: Validate whether the user has permission to place the order
-// TODO: Validate whether the store ID points to the right store
 const placeOrder = async (
   storeId: number,
   userId: number,
   payload: any,
   orderType: string
 ) => {
-  const result = await verifyQuantity(storeId, payload.order_lines);
+  const result = await matchInventoryWithOrderLines(
+    storeId,
+    payload.orderLines
+  );
 
   if (typeof result === "string") {
     return {
@@ -108,14 +109,32 @@ const placeOrder = async (
               data: createOrderLinesData,
             },
           },
-          transactions: {
-            create: {
-              transaction_status_key: "PENDING",
-              transaction_type_key: "SALE",
-              transaction_method_key: payload.transactionMethod,
-              amount: total,
+          ...(orderType !== TRANSFER_ORDER && {
+            transactions: {
+              create: {
+                transaction_status_key: "PENDING",
+                transaction_type_key: "SALE",
+                transaction_method_key: payload.transactionMethod,
+                amount: total,
+              },
             },
-          },
+          }),
+          ...(payload.shippingAddress && {
+            shipments: {
+              create: {
+                address: {
+                  connectOrCreate: {
+                    where: {
+                      ...payload.shippingAddress,
+                    },
+                    create: {
+                      ...payload.shippingAddress,
+                    },
+                  },
+                },
+              },
+            },
+          }),
         },
         include: {
           transactions: true,
@@ -138,6 +157,13 @@ const placeOrder = async (
   }
 };
 
+// TODO: A sales order can only be placed at a shop by a customer.
+// TODO: A purchase order can only be placed at a vendor by a staff member.
+// TODO: A transfer order can only be placed at a shop by a staff member.
+// TODO: A shipment must be created when placing a purchase order or transfer order.
+// TODO: The shippingAddress of a transfer order can only be that of a shop's.
+const isOrderValid = async (storeId: number, orderType: string) => {};
+
 // TODO: Types
 const fulfillOrder = async (storeId: number, orderId: number) => {
   const order = await prisma.order.findUnique({
@@ -151,7 +177,10 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
   });
 
   if (order && order.order_status_key === "OPEN") {
-    const result = await verifyQuantity(storeId, order.orderLines);
+    const result = await matchInventoryWithOrderLines(
+      storeId,
+      order.orderLines
+    );
 
     if (typeof result === "string") {
       return {
@@ -200,20 +229,6 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
           data: {
             order_status_key: "ARCHIVED",
           },
-          include: {
-            transactions: true,
-            orderLines: {
-              include: {
-                product: true,
-              },
-            },
-            store: {
-              include: {
-                address: true,
-              },
-            },
-            user: true,
-          },
         });
 
         return {
@@ -231,24 +246,33 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
 };
 
 // This storeId parameter indicates the store which the shipment is bound for
-// In general, the storeId parameter always indicates the store attended to by the user
-const receiveOrder = async (storeId: number, orderId: number) => {
-  // Verify storeId parameter by checking if
-  // shipment.address_id = store.address_id where store.id = storeId
+// In general, the storeId parameter always indicates the store currently attended to by the user
+const receiveOrder = async (
+  storeId: number,
+  orderId: number,
+  orderType: string
+) => {
+  // An order can only be received at a shop.
   const receivingStore = await prisma.store.findUniqueOrThrow({
     where: {
       id: storeId,
+      store_type_key: SHOP,
     },
     include: {
       inventory: true,
     },
   });
 
-  // TODO: change this name
-  const matchingShipments = await prisma.shipment.findMany({
+  // TODO: Define PK on order_id and address_id.
+  //       We don't want a duplicate of order and address combination.
+  //       That will allow us to use findUnique below.
+  const orderShipmentsForReceivingStore = await prisma.shipment.findMany({
     where: {
       order_id: orderId,
       address_id: receivingStore.address_id,
+      order: {
+        order_type_key: orderType,
+      },
     },
     include: {
       order: {
@@ -265,30 +289,32 @@ const receiveOrder = async (storeId: number, orderId: number) => {
   });
 
   // Can only receive an order if it has a shipment.
-  if (matchingShipments.length === 1) {
-    const result = await verifyQuantity(
-      matchingShipments[0].order.store_id,
-      matchingShipments[0].order.orderLines
+  if (orderShipmentsForReceivingStore.length === 1) {
+    const order = orderShipmentsForReceivingStore[0].order;
+
+    const shippingInventory = await matchInventoryWithOrderLines(
+      order.store_id,
+      order.orderLines
     );
 
-    const receivingStoreResult = await verifyQuantity(
+    const receivingInventory = await matchInventoryWithOrderLines(
       storeId,
-      matchingShipments[0].order.orderLines
+      order.orderLines
     );
 
     if (
-      typeof result === "string" ||
-      typeof receivingStoreResult === "string"
+      typeof shippingInventory === "string" ||
+      typeof receivingInventory === "string"
     ) {
       return {
         message: "Order could not be received.",
-        order: matchingShipments[0].order,
+        order: order,
       };
     } else {
       const updateInventoryArgs: Prisma.InventoryUpdateArgs[] = [];
       const insufficientInventory = [];
 
-      for (const item of result) {
+      for (const item of shippingInventory) {
         if (item.quantityReserved >= item.quantityOrdered) {
           updateInventoryArgs.push({
             where: { id: item.inventoryId },
@@ -301,7 +327,7 @@ const receiveOrder = async (storeId: number, orderId: number) => {
         }
       }
 
-      for (const item of receivingStoreResult) {
+      for (const item of receivingInventory) {
         updateInventoryArgs.push({
           where: { id: item.inventoryId },
           data: {
@@ -335,20 +361,6 @@ const receiveOrder = async (storeId: number, orderId: number) => {
           data: {
             order_status_key: "ARCHIVED",
           },
-          include: {
-            transactions: true,
-            orderLines: {
-              include: {
-                product: true,
-              },
-            },
-            store: {
-              include: {
-                address: true,
-              },
-            },
-            user: true,
-          },
         });
 
         return {
@@ -358,13 +370,15 @@ const receiveOrder = async (storeId: number, orderId: number) => {
       });
     }
   } else {
-    return "Order does not have a single, terminating shipment at the specified store.";
+    return "Order does not have a single, terminating shipment at the receiving store.";
   }
 };
 
-// TODO: Rename function
 // TODO: Figure out how to do the error handling properly
-const verifyQuantity = async (storeId: number, orderLines: OrderLine[]) => {
+const matchInventoryWithOrderLines = async (
+  storeId: number,
+  orderLines: OrderLine[]
+) => {
   const productQuantityHashMap = new Map<number, number>();
   for (const orderLine of orderLines) {
     productQuantityHashMap.set(
@@ -385,7 +399,8 @@ const verifyQuantity = async (storeId: number, orderLines: OrderLine[]) => {
     },
   });
 
-  const arrayOfSomethingDto = [];
+  // TODO: Rename this
+  const inventoryOrdered = [];
   const unavailableInventory = [];
 
   for (const item of matchingInventory) {
@@ -394,10 +409,10 @@ const verifyQuantity = async (storeId: number, orderLines: OrderLine[]) => {
     );
 
     if (quantityOrdered) {
-      arrayOfSomethingDto.push({
+      inventoryOrdered.push({
+        inventoryId: item.id,
         storeId: storeId,
         productId: item.product_id,
-        inventoryId: item.id,
         quantityStocked: item.quantity_stocked,
         quantityReserved: item.quantity_reserved,
         quantityOrdered: quantityOrdered,
@@ -417,7 +432,7 @@ const verifyQuantity = async (storeId: number, orderLines: OrderLine[]) => {
     )}`;
   }
 
-  return arrayOfSomethingDto;
+  return inventoryOrdered;
 };
 
 export default {
@@ -425,4 +440,5 @@ export default {
   specificOrder,
   placeOrder,
   fulfillOrder,
+  receiveOrder,
 };

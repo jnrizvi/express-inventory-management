@@ -158,7 +158,10 @@ async function main() {
         key: "APPLE_PAY",
       },
       {
-        key: "VISA",
+        key: "DEBIT",
+      },
+      {
+        key: "CREDIT",
       },
     ],
   });

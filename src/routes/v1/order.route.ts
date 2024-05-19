@@ -45,8 +45,9 @@ router.post(
 );
 
 // Update a purchase order for a specific vendor
-router.put("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
+router.put(
+  "/vendors/:storeId/purchase-orders/:orderId",
+  orderController.receivePurchaseOrder
 );
 
 // Delete a purchase order for a specific vendor
@@ -55,23 +56,27 @@ router.delete("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
 );
 
 // Return all transfer orders for a specific shop
-router.get("/shops/:storeId/transfer-orders", (_, res) =>
-  res.send("Not implemented")
+router.get(
+  "/shops/:storeId/transfer-orders",
+  orderController.allTransferOrders
 );
 
 // Return a specific transfer order for a specific shop
-router.get("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
+router.get(
+  "/shops/:storeId/transfer-orders/:orderId",
+  orderController.specificTransferOrder
 );
 
 // Create a new transfer order for a specific shop
-router.post("/shops/:storeId/transfer-orders", (_, res) =>
-  res.send("Not implemented")
+router.post(
+  "/shops/:storeId/transfer-orders",
+  orderController.placeTransferOrder
 );
 
 // Update a transfer order for a specific shop
-router.put("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
+router.put(
+  "/shops/:storeId/transfer-orders/:orderId",
+  orderController.receiveTransferOrder
 );
 
 // Delete a transfer order for a specific shop

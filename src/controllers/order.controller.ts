@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { orderService } from "../services";
-import { PURCHASE_ORDER, SALES_ORDER } from "../util/constants";
+import { PURCHASE_ORDER, SALES_ORDER, TRANSFER_ORDER } from "../util/constants";
 
 // Should I not return anything?
 const allSalesOrders = async (req: Request, res: Response) => {
@@ -75,8 +75,6 @@ const specificPurchaseOrder = async (req: Request, res: Response) => {
 };
 
 // Should I not return anything?
-// TODO: A shipment must be created when placing a purchase order or transfer order.
-//       placeOrder function can't be used.
 // TODO: userId should come from some user auth service, not request body.
 const placePurchaseOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
@@ -92,6 +90,72 @@ const placePurchaseOrder = async (req: Request, res: Response) => {
   res.send(order);
 };
 
+const receivePurchaseOrder = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const orderId = +req.params.orderId;
+
+  const order = await orderService.receiveOrder(
+    storeId,
+    orderId,
+    PURCHASE_ORDER
+  );
+  res.send(order);
+};
+
+// Should I not return anything?
+const allTransferOrders = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const orderStatus = req.query.orderStatus as string;
+
+  const orders = await orderService.allOrders(
+    storeId,
+    TRANSFER_ORDER,
+    orderStatus
+  );
+  res.send(orders);
+};
+
+// Should I not return anything?
+const specificTransferOrder = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const orderId = +req.params.orderId;
+
+  const order = await orderService.specificOrder(
+    storeId,
+    orderId,
+    TRANSFER_ORDER
+  );
+  res.send(order);
+};
+
+// Should I not return anything?
+// TODO: userId should come from some user auth service, not request body.
+const placeTransferOrder = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const userId = +req.body.userId;
+  const payload = req.body;
+
+  const order = await orderService.placeOrder(
+    storeId,
+    userId,
+    payload,
+    TRANSFER_ORDER
+  );
+  res.send(order);
+};
+
+const receiveTransferOrder = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const orderId = +req.params.orderId;
+
+  const order = await orderService.receiveOrder(
+    storeId,
+    orderId,
+    TRANSFER_ORDER
+  );
+  res.send(order);
+};
+
 export default {
   allSalesOrders,
   specificSalesOrder,
@@ -103,4 +167,9 @@ export default {
   allPurchaseOrders,
   specificPurchaseOrder,
   placePurchaseOrder,
+  receivePurchaseOrder,
+  allTransferOrders,
+  specificTransferOrder,
+  placeTransferOrder,
+  receiveTransferOrder,
 };
