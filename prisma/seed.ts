@@ -10,7 +10,7 @@ async function main() {
         description: "User who purchases products from a store.",
       },
       {
-        key: "OWNER",
+        key: "STAFF",
         description: "User who runs a store.",
       },
     ],

@@ -1,6 +1,11 @@
 import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
-import { SALES_ORDER, SHOP, TRANSFER_ORDER } from "../util/constants";
+import {
+  PURCHASE_ORDER,
+  SALES_ORDER,
+  SHOP,
+  TRANSFER_ORDER,
+} from "../util/constants";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
@@ -32,10 +37,11 @@ const specificOrder = (
   });
 };
 
+// We already have separate routes, and can define separate payload validators for each.
 // TODO: Use a data transfer object instead of the prisma type. Also type.
 const placeOrder = async (
-  storeId: number,
   userId: number,
+  storeId: number,
   payload: any,
   orderType: string
 ) => {
@@ -112,7 +118,7 @@ const placeOrder = async (
               data: createOrderLinesData,
             },
           },
-          ...(orderType !== TRANSFER_ORDER && {
+          ...(payload.transactionMethod && {
             transactions: {
               create: {
                 transaction_status_key: "PENDING",
@@ -163,9 +169,12 @@ const placeOrder = async (
 // TODO: A sales order can only be placed at a shop by a customer.
 // TODO: A purchase order can only be placed at a vendor by a staff member.
 // TODO: A transfer order can only be placed at a shop by a staff member.
-// TODO: A shipment must be created when placing a purchase order or transfer order.
 // TODO: The shippingAddress of a transfer order can only be that of a shop's.
-const isOrderValid = async (storeId: number, orderType: string) => {};
+const isOrderValid = async (
+  userId: number,
+  storeId: number,
+  orderType: string
+) => {};
 
 // TODO: Types
 const fulfillOrder = async (storeId: number, orderId: number) => {

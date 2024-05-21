@@ -39,6 +39,9 @@ router.get(
 );
 
 // Create a new purchase order for a specific vendor
+// TODO: Add validator.
+//       Must have a shippingAddress.
+// TODO: Add middleware to check if the user has the required rights for the request.
 router.post(
   "/vendors/:storeId/purchase-orders",
   orderController.placePurchaseOrder
@@ -68,6 +71,9 @@ router.get(
 );
 
 // Create a new transfer order for a specific shop
+// TODO: Add validator.
+// Must not have a transactionMethod.
+// Must have a shippingAddress
 router.post(
   "/shops/:storeId/transfer-orders",
   orderController.placeTransferOrder

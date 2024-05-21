@@ -32,8 +32,8 @@ const placeSalesOrder = async (req: Request, res: Response) => {
   const payload = req.body;
 
   const order = await orderService.placeOrder(
-    storeId,
     userId,
+    storeId,
     payload,
     SALES_ORDER
   );
@@ -82,8 +82,8 @@ const placePurchaseOrder = async (req: Request, res: Response) => {
   const payload = req.body;
 
   const order = await orderService.placeOrder(
-    storeId,
     userId,
+    storeId,
     payload,
     PURCHASE_ORDER
   );
@@ -136,8 +136,8 @@ const placeTransferOrder = async (req: Request, res: Response) => {
   const payload = req.body;
 
   const order = await orderService.placeOrder(
-    storeId,
     userId,
+    storeId,
     payload,
     TRANSFER_ORDER
   );
