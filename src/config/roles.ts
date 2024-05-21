@@ -1,8 +1,8 @@
 import { CUSTOMER, STAFF } from "../util/constants";
 
 const allRoles = {
-  [CUSTOMER]: ["placeSalesOrder"],
-  [STAFF]: ["placePurchaseOrder", "placeTransferOrder"],
+  [CUSTOMER]: [],
+  [STAFF]: ["getOrders", "manageOrders"],
 };
 
 export const roles = Object.keys(allRoles);

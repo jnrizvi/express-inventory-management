@@ -1,93 +1,43 @@
 import express from "express";
+import auth from "../../middleware/auth";
 import { orderController } from "../../controllers";
 
 const router = express.Router();
 
-// Return all sales orders for a specific shop
-router.get("/shops/:storeId/sales-orders", orderController.allSalesOrders);
+// Sales Orders
+router
+  .route("/shops/:storeId/sales-orders")
+  .get(auth("getOrders"), orderController.allSalesOrders)
+  .post(auth("manageOrders"), orderController.placeSalesOrder);
 
-// Return a specific sales order for a specific shop
-router.get(
-  "/shops/:storeId/sales-orders/:orderId",
-  orderController.specificSalesOrder
-);
+router
+  .route("/shops/:storeId/sales-orders/:orderId")
+  .get(auth("getOrders"), orderController.specificSalesOrder)
+  .put(auth("manageOrders"), orderController.processSalesOrder)
+  .delete(auth("manageOrders"), (_, res) => res.send("Not implemented"));
 
-// Create a new sales order for a specific shop
-router.post("/shops/:storeId/sales-orders", orderController.placeSalesOrder);
+// Purchase Orders
+router
+  .route("/vendors/:storeId/purchase-orders")
+  .get(auth("getOrders"), orderController.allPurchaseOrders)
+  .post(auth("manageOrders"), orderController.placePurchaseOrder);
 
-// Update a sales order for a specific shop
-router.put(
-  "/shops/:storeId/sales-orders/:orderId",
-  orderController.processSalesOrder
-);
+router
+  .route("/vendors/:storeId/purchase-orders/:orderId")
+  .get(auth("getOrders"), orderController.specificPurchaseOrder)
+  .put(auth("manageOrders"), orderController.receivePurchaseOrder)
+  .delete(auth("manageOrders"), (_, res) => res.send("Not implemented"));
 
-// Delete a sales order for a specific shop
-router.delete("/shops/:storeId/sales-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
-);
+// Transfer Orders
+router
+  .route("/shops/:storeId/transfer-orders")
+  .get(auth("getOrders"), orderController.allTransferOrders)
+  .post(auth("manageOrders"), orderController.placeTransferOrder);
 
-// Return all purchase orders for a specific vendor
-router.get(
-  "/vendors/:storeId/purchase-orders",
-  orderController.allPurchaseOrders
-);
-
-// Return a specific purchase order for a specific vendor
-router.get(
-  "/vendors/:storeId/purchase-orders/:orderId",
-  orderController.specificPurchaseOrder
-);
-
-// Create a new purchase order for a specific vendor
-// TODO: Add validator.
-//       Must have a shippingAddress.
-// TODO: Add middleware to check if the user has the required rights for the request.
-router.post(
-  "/vendors/:storeId/purchase-orders",
-  orderController.placePurchaseOrder
-);
-
-// Update a purchase order for a specific vendor
-router.put(
-  "/vendors/:storeId/purchase-orders/:orderId",
-  orderController.receivePurchaseOrder
-);
-
-// Delete a purchase order for a specific vendor
-router.delete("/vendors/:storeId/purchase-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
-);
-
-// Return all transfer orders for a specific shop
-router.get(
-  "/shops/:storeId/transfer-orders",
-  orderController.allTransferOrders
-);
-
-// Return a specific transfer order for a specific shop
-router.get(
-  "/shops/:storeId/transfer-orders/:orderId",
-  orderController.specificTransferOrder
-);
-
-// Create a new transfer order for a specific shop
-// TODO: Add validator.
-// Must not have a transactionMethod.
-// Must have a shippingAddress
-router.post(
-  "/shops/:storeId/transfer-orders",
-  orderController.placeTransferOrder
-);
-
-// Update a transfer order for a specific shop
-router.put(
-  "/shops/:storeId/transfer-orders/:orderId",
-  orderController.receiveTransferOrder
-);
-
-// Delete a transfer order for a specific shop
-router.delete("/shops/:storeId/transfer-orders/:orderId", (_, res) =>
-  res.send("Not implemented")
-);
+router
+  .route("/shops/:storeId/transfer-orders/:orderId")
+  .get(auth("getOrders"), orderController.specificTransferOrder)
+  .put(auth("manageOrders"), orderController.receiveTransferOrder)
+  .delete(auth("manageOrders"), (_, res) => res.send("Not implemented"));
 
 export default router;
