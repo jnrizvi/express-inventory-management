@@ -1,6 +1,7 @@
-import { CUSTOMER, STAFF, SHOP, VENDOR } from "../util/constants";
+import { CUSTOMER, STAFF, PURCHASE_ORDER, SALES_ORDER, TRANSFER_ORDER, SHOP, VENDOR } from "../util/constants";
 
-// NOTE: The customer never interacts with this system.
+
+// NOTE: The customer never uses the system. This is just for enforcing the rules of the system.
 //       These roles are for maintaining data integrity.
 //       For example, the user_id of an order record can only be the user.id of a customer,
 //       and the store_id can only be the store.id of a shop.
@@ -10,7 +11,23 @@ import { CUSTOMER, STAFF, SHOP, VENDOR } from "../util/constants";
 const allRoles = {
   [CUSTOMER]: [SHOP],
   [STAFF]: [SHOP, VENDOR],
+}
+
+// map order types to the permitted user and store types 
+const contextRules = {
+  [SALES_ORDER]: {
+    userTypes: [CUSTOMER],
+    storeTypes: [SHOP]
+  },
+  [PURCHASE_ORDER]: {
+    userTypes: [STAFF],
+    storeTypes: [VENDOR]
+  },
+  [TRANSFER_ORDER]: {
+    userTypes: [STAFF],
+    storeTypes: [SHOP]
+  }
 };
 
-export const roles = Object.keys(allRoles);
-export const roleRights = new Map(Object.entries(allRoles));
+export const orderTypes = Object.keys(contextRules);
+export const orderTypeRules = new Map(Object.entries(contextRules));

@@ -6,6 +6,7 @@ import {
   SHOP,
   TRANSFER_ORDER,
 } from "../util/constants";
+import { orderTypeRules } from "../config/roles";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
@@ -90,13 +91,12 @@ const placeOrder = async (
 
     if (insufficientInventory.length) {
       return {
-        message: `Insufficient stock for ${
-          insufficientInventory.length
-        } product(s):
+        message: `Insufficient stock for ${insufficientInventory.length
+          } product(s):
         ${insufficientInventory.map(
-          (item) =>
-            `${item.productName} (Only ${item.quantityStocked} in stock)`
-        )}
+            (item) =>
+              `${item.productName} (Only ${item.quantityStocked} in stock)`
+          )}
         `,
         order: null,
       };
@@ -166,15 +166,23 @@ const placeOrder = async (
   }
 };
 
-// TODO: A sales order can only be placed at a shop by a customer.
-// TODO: A purchase order can only be placed at a vendor by a staff member.
-// TODO: A transfer order can only be placed at a shop by a staff member.
-// TODO: The shippingAddress of a transfer order can only be that of a shop's.
 const isOrderValid = async (
   userId: number,
   storeId: number,
   orderType: string
-) => {};
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } })
+  const store = await prisma.store.findUnique({ where: { id: storeId } })
+
+  if (user && store) {
+    const rules = orderTypeRules.get(orderType)
+    if (rules && rules.userTypes.includes(user.user_role_key) && rules.storeTypes.includes(store.store_type_key)) {
+      return true
+    }
+  }
+
+  return false
+};
 
 // TODO: Types
 const fulfillOrder = async (storeId: number, orderId: number) => {
@@ -223,12 +231,11 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
 
       if (insufficientInventory.length) {
         return {
-          message: `Insufficient reserves for ${
-            insufficientInventory.length
-          } product(s):
+          message: `Insufficient reserves for ${insufficientInventory.length
+            } product(s):
         ${insufficientInventory.map(
-          (item) => `${item.productName} (${item.quantityReserved} reserved)`
-        )}
+              (item) => `${item.productName} (${item.quantityReserved} reserved)`
+            )}
         `,
           order: null,
         };
@@ -362,12 +369,11 @@ const receiveOrder = async (
 
       if (insufficientInventory.length) {
         return {
-          message: `Insufficient reserves for ${
-            insufficientInventory.length
-          } product(s):
+          message: `Insufficient reserves for ${insufficientInventory.length
+            } product(s):
         ${insufficientInventory.map(
-          (item) => `${item.productName} (${item.quantityReserved} reserved)`
-        )}
+              (item) => `${item.productName} (${item.quantityReserved} reserved)`
+            )}
         `,
           order: null,
         };
@@ -448,11 +454,10 @@ const matchInventoryWithOrderLines = async (
   }
 
   if (unavailableInventory.length) {
-    return `${
-      unavailableInventory.length
-    } unavailable product(s): ${unavailableInventory.map(
-      (item) => `${item.product.name}`
-    )}`;
+    return `${unavailableInventory.length
+      } unavailable product(s): ${unavailableInventory.map(
+        (item) => `${item.product.name}`
+      )}`;
   }
 
   return inventoryOrdered;
@@ -464,4 +469,5 @@ export default {
   placeOrder,
   fulfillOrder,
   receiveOrder,
+  isOrderValid
 };
