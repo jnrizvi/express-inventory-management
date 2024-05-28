@@ -167,36 +167,6 @@ const placeOrder = async (
   }
 };
 
-const validateOrder = async (
-  userEmail: string,
-  storeId: number,
-  orderType: string
-) => {
-  const user = await prisma.user.findUnique({ where: { email: userEmail } });
-  const store = await prisma.store.findUnique({ where: { id: storeId } });
-
-  if (user && store) {
-    const rules = orderTypeRules.get(orderType);
-    if (
-      rules &&
-      rules.userTypes.includes(user.user_role_key) &&
-      rules.storeTypes.includes(store.store_type_key)
-    ) {
-      return {
-        isValid: true,
-        user: user,
-        store: store,
-      };
-    }
-  }
-
-  return {
-    isValid: false,
-    user: user,
-    store: store,
-  };
-};
-
 // TODO: Types
 const fulfillOrder = async (storeId: number, orderId: number) => {
   const order = await prisma.order.findUnique({
@@ -485,5 +455,4 @@ export default {
   placeOrder,
   fulfillOrder,
   receiveOrder,
-  validateOrder,
 };

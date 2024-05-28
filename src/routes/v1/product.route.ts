@@ -1,6 +1,6 @@
 import express from "express";
 import { productController } from "../../controllers";
-import validateStore from "../../middleware/params";
+import validateTypes from "../../middleware/params";
 import { SHOP, VENDOR } from "../../util/constants";
 
 const router = express.Router();
@@ -19,25 +19,25 @@ router
 // Shop Inventory
 router
   .route("/shops/:storeId/products")
-  .get(validateStore(SHOP), productController.allStoreProducts)
-  .post(validateStore(SHOP), productController.addProductToStore);
+  .get(validateTypes(SHOP), productController.allStoreProducts)
+  .post(validateTypes(SHOP), productController.addProductToStore);
 
 router
   .route("/shops/:storeId/products/:productId")
-  .get(validateStore(SHOP), productController.specificStoreProduct)
-  .put(validateStore(SHOP), productController.updateProductInventory)
+  .get(validateTypes(SHOP), productController.specificStoreProduct)
+  .put(validateTypes(SHOP), productController.updateProductInventory)
   .delete((_, res) => res.send("Not implemented"));
 
 // Vendor Inventory
 router
   .route("/vendors/:storeId/products")
-  .get(validateStore(VENDOR), productController.allStoreProducts)
-  .post(validateStore(VENDOR), productController.addProductToStore);
+  .get(validateTypes(VENDOR), productController.allStoreProducts)
+  .post(validateTypes(VENDOR), productController.addProductToStore);
 
 router
   .route("/vendors/:storeId/products/:productId")
-  .get(validateStore(VENDOR), productController.specificStoreProduct)
-  .put(validateStore(VENDOR), productController.updateProductInventory)
+  .get(validateTypes(VENDOR), productController.specificStoreProduct)
+  .put(validateTypes(VENDOR), productController.updateProductInventory)
   .delete((_, res) => res.send("Not implemented"));
 
 export default router;

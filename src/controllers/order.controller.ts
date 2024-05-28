@@ -31,32 +31,16 @@ const specificOrder =
 // Curried
 const placeOrder =
   (orderType: string) => async (req: Request, res: Response) => {
-    const storeId = +req.params.storeId;
-    const userEmail: string = req.body.email;
     const payload = req.body;
 
-    const orderValidation = await orderService.validateOrder(
-      userEmail,
-      storeId,
+    const order = await orderService.placeOrder(
+      payload.user.id,
+      payload.store.id,
+      payload,
       orderType
     );
 
-    if (
-      orderValidation.isValid &&
-      orderValidation.user &&
-      orderValidation.store
-    ) {
-      const order = await orderService.placeOrder(
-        orderValidation.user.id,
-        orderValidation.store.id,
-        payload,
-        orderType
-      );
-
-      res.status(200).send(order);
-    } else {
-      res.status(400).send("Bad Request.");
-    }
+    res.status(200).send(order);
   };
 
 // Curried
