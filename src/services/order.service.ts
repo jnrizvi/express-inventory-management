@@ -91,12 +91,13 @@ const placeOrder = async (
 
     if (insufficientInventory.length) {
       return {
-        message: `Insufficient stock for ${insufficientInventory.length
-          } product(s):
+        message: `Insufficient stock for ${
+          insufficientInventory.length
+        } product(s):
         ${insufficientInventory.map(
-            (item) =>
-              `${item.productName} (Only ${item.quantityStocked} in stock)`
-          )}
+          (item) =>
+            `${item.productName} (Only ${item.quantityStocked} in stock)`
+        )}
         `,
         order: null,
       };
@@ -166,22 +167,34 @@ const placeOrder = async (
   }
 };
 
-const isOrderValid = async (
-  userId: number,
+const validateOrder = async (
+  userEmail: string,
   storeId: number,
   orderType: string
 ) => {
-  const user = await prisma.user.findUnique({ where: { id: userId } })
-  const store = await prisma.store.findUnique({ where: { id: storeId } })
+  const user = await prisma.user.findUnique({ where: { email: userEmail } });
+  const store = await prisma.store.findUnique({ where: { id: storeId } });
 
   if (user && store) {
-    const rules = orderTypeRules.get(orderType)
-    if (rules && rules.userTypes.includes(user.user_role_key) && rules.storeTypes.includes(store.store_type_key)) {
-      return true
+    const rules = orderTypeRules.get(orderType);
+    if (
+      rules &&
+      rules.userTypes.includes(user.user_role_key) &&
+      rules.storeTypes.includes(store.store_type_key)
+    ) {
+      return {
+        isValid: true,
+        user: user,
+        store: store,
+      };
     }
   }
 
-  return false
+  return {
+    isValid: false,
+    user: user,
+    store: store,
+  };
 };
 
 // TODO: Types
@@ -231,11 +244,12 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
 
       if (insufficientInventory.length) {
         return {
-          message: `Insufficient reserves for ${insufficientInventory.length
-            } product(s):
+          message: `Insufficient reserves for ${
+            insufficientInventory.length
+          } product(s):
         ${insufficientInventory.map(
-              (item) => `${item.productName} (${item.quantityReserved} reserved)`
-            )}
+          (item) => `${item.productName} (${item.quantityReserved} reserved)`
+        )}
         `,
           order: null,
         };
@@ -369,11 +383,12 @@ const receiveOrder = async (
 
       if (insufficientInventory.length) {
         return {
-          message: `Insufficient reserves for ${insufficientInventory.length
-            } product(s):
+          message: `Insufficient reserves for ${
+            insufficientInventory.length
+          } product(s):
         ${insufficientInventory.map(
-              (item) => `${item.productName} (${item.quantityReserved} reserved)`
-            )}
+          (item) => `${item.productName} (${item.quantityReserved} reserved)`
+        )}
         `,
           order: null,
         };
@@ -454,10 +469,11 @@ const matchInventoryWithOrderLines = async (
   }
 
   if (unavailableInventory.length) {
-    return `${unavailableInventory.length
-      } unavailable product(s): ${unavailableInventory.map(
-        (item) => `${item.product.name}`
-      )}`;
+    return `${
+      unavailableInventory.length
+    } unavailable product(s): ${unavailableInventory.map(
+      (item) => `${item.product.name}`
+    )}`;
   }
 
   return inventoryOrdered;
@@ -469,5 +485,5 @@ export default {
   placeOrder,
   fulfillOrder,
   receiveOrder,
-  isOrderValid
+  validateOrder,
 };

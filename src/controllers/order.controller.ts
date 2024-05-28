@@ -3,68 +3,72 @@ import { orderService } from "../services";
 import { PURCHASE_ORDER, SALES_ORDER, TRANSFER_ORDER } from "../util/constants";
 
 // Curried
-const allOrders = (orderType: string) => async (req: Request, res: Response) => {
-  const storeId = +req.params.storeId;
-  const orderStatus = req.query.orderStatus as string;
+const allOrders =
+  (orderType: string) => async (req: Request, res: Response) => {
+    const storeId = +req.params.storeId;
+    const orderStatus = req.query.orderStatus as string;
 
-  const orders = await orderService.allOrders(
-    storeId,
-    orderType,
-    orderStatus
-  );
-
-  res.send(orders);
-}
-
-// Curried
-const specificOrder = (orderType: string) => async (req: Request, res: Response) => {
-  const storeId = +req.params.storeId;
-  const orderId = +req.params.orderId;
-
-  const order = await orderService.specificOrder(
-    storeId,
-    orderId,
-    orderType
-  );
-
-  res.send(order);
-};
-
-// Curried
-const placeOrder = (orderType: string) => async (req: Request, res: Response) => {
-  const storeId = +req.params.storeId;
-  const userId = +req.body.userId;
-  const payload = req.body;
-
-  const isOrderValid = await orderService.isOrderValid(userId, storeId, orderType)
-
-  if (isOrderValid) {
-    const order = await orderService.placeOrder(
-      userId,
+    const orders = await orderService.allOrders(
       storeId,
-      payload,
+      orderType,
+      orderStatus
+    );
+
+    res.send(orders);
+  };
+
+// Curried
+const specificOrder =
+  (orderType: string) => async (req: Request, res: Response) => {
+    const storeId = +req.params.storeId;
+    const orderId = +req.params.orderId;
+
+    const order = await orderService.specificOrder(storeId, orderId, orderType);
+
+    res.send(order);
+  };
+
+// Curried
+const placeOrder =
+  (orderType: string) => async (req: Request, res: Response) => {
+    const storeId = +req.params.storeId;
+    const userEmail: string = req.body.email;
+    const payload = req.body;
+
+    const orderValidation = await orderService.validateOrder(
+      userEmail,
+      storeId,
       orderType
     );
 
-    res.status(200).send(order);
-  } else {
-    res.status(400).send("Bad Request.")
-  }
-};
+    if (
+      orderValidation.isValid &&
+      orderValidation.user &&
+      orderValidation.store
+    ) {
+      const order = await orderService.placeOrder(
+        orderValidation.user.id,
+        orderValidation.store.id,
+        payload,
+        orderType
+      );
+
+      res.status(200).send(order);
+    } else {
+      res.status(400).send("Bad Request.");
+    }
+  };
 
 // Curried
-const receiveOrder = (orderType: string) => async (req: Request, res: Response) => {
-  const storeId = +req.params.storeId;
-  const orderId = +req.params.orderId;
+const receiveOrder =
+  (orderType: string) => async (req: Request, res: Response) => {
+    const storeId = +req.params.storeId;
+    const orderId = +req.params.orderId;
 
-  const order = await orderService.receiveOrder(
-    storeId,
-    orderId,
-    orderType
-  );
+    const order = await orderService.receiveOrder(storeId, orderId, orderType);
 
-  res.send(order);
-};
+    res.send(order);
+  };
 
 const fulfillSalesOrder = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
@@ -83,5 +87,5 @@ export default {
   allOrders,
   specificOrder,
   placeOrder,
-  receiveOrder
+  receiveOrder,
 };

@@ -1,30 +1,43 @@
 import express from "express";
 import { productController } from "../../controllers";
+import validateStore from "../../middleware/params";
+import { SHOP, VENDOR } from "../../util/constants";
 
 const router = express.Router();
 
-// Return all products
-router.get("/products", (_, res) => res.send("Not implemented"));
+router
+  .route("/products")
+  .get(productController.allProducts)
+  .post(productController.createProduct);
 
-// Return a specific product
-router.get("/products/:productId", (_, res) => res.send("Not implemented"));
+router
+  .route("/products/:productId")
+  .get(productController.specificProduct)
+  .put(productController.updateProduct)
+  .delete((_, res) => res.send("Not implemented"));
 
-// Create a new product
-router.post("/products", (_, res) => res.send("Not implemented"));
+// Shop Inventory
+router
+  .route("/shops/:storeId/products")
+  .get(validateStore(SHOP), productController.allStoreProducts)
+  .post(validateStore(SHOP), productController.addProductToStore);
 
-// Update a product
-router.put("/products/:productId", (_, res) => res.send("Not implemented"));
+router
+  .route("/shops/:storeId/products/:productId")
+  .get(validateStore(SHOP), productController.specificStoreProduct)
+  .put(validateStore(SHOP), productController.updateProductInventory)
+  .delete((_, res) => res.send("Not implemented"));
 
-// Delete a product
-router.delete("/products/:productId", (_, res) => res.send("Not implemented"));
+// Vendor Inventory
+router
+  .route("/vendors/:storeId/products")
+  .get(validateStore(VENDOR), productController.allStoreProducts)
+  .post(validateStore(VENDOR), productController.addProductToStore);
 
-// Return all products at a specific shop
-router.get("/shops/:storeId/products", productController.allShopProducts);
-
-// Return a specific product at a specific shop
-router.get(
-  "/shops/:storeId/products/:productId",
-  productController.specificShopProduct
-);
+router
+  .route("/vendors/:storeId/products/:productId")
+  .get(validateStore(VENDOR), productController.specificStoreProduct)
+  .put(validateStore(VENDOR), productController.updateProductInventory)
+  .delete((_, res) => res.send("Not implemented"));
 
 export default router;
