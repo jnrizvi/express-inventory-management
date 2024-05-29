@@ -1,12 +1,5 @@
 import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
-import {
-  PURCHASE_ORDER,
-  SALES_ORDER,
-  SHOP,
-  TRANSFER_ORDER,
-} from "../util/constants";
-import { orderTypeRules } from "../config/roles";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
@@ -172,7 +165,6 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
   const order = await prisma.order.findUnique({
     where: {
       id: orderId,
-      order_type_key: SALES_ORDER,
     },
     include: {
       orderLines: true,
@@ -253,29 +245,18 @@ const fulfillOrder = async (storeId: number, orderId: number) => {
   }
 };
 
-// This storeId parameter indicates the store which the shipment is bound for
-// In general, the storeId parameter always indicates the store currently attended to by the user
 const receiveOrder = async (
   storeId: number,
   orderId: number,
+  payload: any,
   orderType: string
 ) => {
-  // An order can only be received at a shop.
-  const receivingStore = await prisma.store.findUniqueOrThrow({
-    where: {
-      id: storeId,
-      store_type_key: SHOP,
-    },
-    include: {
-      inventory: true,
-    },
-  });
-
+  // This storeId parameter indicates the receiving store which the shipment is bound for
   const shipmentToReceivingStore = await prisma.shipment.findUnique({
     where: {
       id: {
         order_id: orderId,
-        address_id: receivingStore.address_id,
+        address_id: payload.store.address_id,
       },
       order: {
         order_type_key: orderType,

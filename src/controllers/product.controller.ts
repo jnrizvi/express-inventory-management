@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { productService } from "../services";
 
-const allProducts = async (req: Request, res: Response) => {
+const allProducts = async (_: Request, res: Response) => {
   const products = await productService.allProducts();
 
   res.send(products);

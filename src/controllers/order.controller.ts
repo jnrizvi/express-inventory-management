@@ -1,8 +1,6 @@
 import { Request, Response } from "express";
 import { orderService } from "../services";
-import { PURCHASE_ORDER, SALES_ORDER, TRANSFER_ORDER } from "../util/constants";
 
-// Curried
 const allOrders =
   (orderType: string) => async (req: Request, res: Response) => {
     const storeId = +req.params.storeId;
@@ -17,7 +15,6 @@ const allOrders =
     res.send(orders);
   };
 
-// Curried
 const specificOrder =
   (orderType: string) => async (req: Request, res: Response) => {
     const storeId = +req.params.storeId;
@@ -28,7 +25,6 @@ const specificOrder =
     res.send(order);
   };
 
-// Curried
 const placeOrder =
   (orderType: string) => async (req: Request, res: Response) => {
     const payload = req.body;
@@ -43,13 +39,18 @@ const placeOrder =
     res.status(200).send(order);
   };
 
-// Curried
 const receiveOrder =
   (orderType: string) => async (req: Request, res: Response) => {
     const storeId = +req.params.storeId;
     const orderId = +req.params.orderId;
+    const payload = req.body;
 
-    const order = await orderService.receiveOrder(storeId, orderId, orderType);
+    const order = await orderService.receiveOrder(
+      storeId,
+      orderId,
+      payload,
+      orderType
+    );
 
     res.send(order);
   };
@@ -63,13 +64,9 @@ const fulfillSalesOrder = async (req: Request, res: Response) => {
 };
 
 export default {
-  fulfillSalesOrder,
-  // TODO: Rather than repeating controller code just to specify the ordertype, add some
-  // middleware to validate if the user has permission to place a certain type of order
-  // and the store type matches what the provided ID points to.
-  // Currying controller functions to avoid repitition
   allOrders,
   specificOrder,
   placeOrder,
+  fulfillSalesOrder,
   receiveOrder,
 };

@@ -7,11 +7,11 @@ async function main() {
     data: [
       {
         key: "CUSTOMER",
-        description: "User who purchases products from a store.",
+        description: "User who purchases products from a shop.",
       },
       {
         key: "STAFF",
-        description: "User who runs a store.",
+        description: "User who operates one or more shops.",
       },
     ],
   });
