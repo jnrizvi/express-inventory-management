@@ -28,6 +28,19 @@ router
   .put(validateTypes(SHOP, SALES_ORDER), orderController.fulfillSalesOrder)
   .delete((_, res) => res.send("Not implemented"));
 
+// I'm uncertain about nesting this much. It's probably fine. I don't see how I can match
+// navigation without nesting (i.e flat design to get /sales-orders directly)
+router
+  .route("/shops/:storeId/sales-orders/:orderId/transactions")
+  .get((_, res) => res.send("Not implemented"))
+  .post((_, res) => res.send("Not implemented"));
+
+router
+  .route("/shops/:storeId/sales-orders/:orderId/transactions/:transactionId")
+  .get((_, res) => res.send("Not implemented"))
+  .put((_, res) => res.send("Not implemented"))
+  .delete((_, res) => res.send("Not implemented"));
+
 // Purchase Orders
 router
   .route("/vendors/:storeId/purchase-orders")

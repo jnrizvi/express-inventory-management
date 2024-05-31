@@ -17,6 +17,8 @@ router
   .delete((_, res) => res.send("Not implemented"));
 
 // Shop Inventory
+// NOTE: We nest the url to describe the inventory resource because its id is composite.
+//       These routes could go in their own inventory.route.ts file.
 router
   .route("/shops/:storeId/products")
   .get(validateTypes(SHOP), productController.allStoreProducts)
