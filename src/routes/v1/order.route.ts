@@ -21,25 +21,20 @@ router
 
 router
   .route("/shops/:storeId/sales-orders/:orderId")
-  .get(
-    validateTypes(SHOP, SALES_ORDER),
-    orderController.specificOrder(SALES_ORDER)
-  )
+  .get(validateTypes(SHOP, SALES_ORDER), orderController.specificOrder)
   .put(validateTypes(SHOP, SALES_ORDER), orderController.fulfillSalesOrder)
   .delete((_, res) => res.send("Not implemented"));
 
-// I'm uncertain about nesting this much. It's probably fine. I don't see how I can match
-// navigation without nesting (i.e flat design to get /sales-orders directly)
 router
   .route("/shops/:storeId/sales-orders/:orderId/transactions")
-  .get((_, res) => res.send("Not implemented"))
-  .post((_, res) => res.send("Not implemented"));
+  .get(validateTypes(SHOP, SALES_ORDER), orderController.allOrderTransactions)
+  .post(validateTypes(SHOP, SALES_ORDER), orderController.createTransaction);
 
 router
   .route("/shops/:storeId/sales-orders/:orderId/transactions/:transactionId")
-  .get((_, res) => res.send("Not implemented"))
-  .put((_, res) => res.send("Not implemented"))
-  .delete((_, res) => res.send("Not implemented"));
+  .get(validateTypes(SHOP, SALES_ORDER), orderController.specificTransaction)
+  .put(validateTypes(SHOP, SALES_ORDER), orderController.updateTransaction)
+  .delete(validateTypes(SHOP, SALES_ORDER), orderController.deleteTransaction);
 
 // Purchase Orders
 router
@@ -52,15 +47,37 @@ router
 
 router
   .route("/vendors/:storeId/purchase-orders/:orderId")
-  .get(
-    validateTypes(VENDOR, PURCHASE_ORDER),
-    orderController.specificOrder(PURCHASE_ORDER)
-  )
+  .get(validateTypes(VENDOR, PURCHASE_ORDER), orderController.specificOrder)
   .put(
     validateTypes(VENDOR, PURCHASE_ORDER),
     orderController.receiveOrder(PURCHASE_ORDER)
   )
   .delete((_, res) => res.send("Not implemented"));
+
+router
+  .route("/vendors/:storeId/purchase-orders/:orderId/transactions")
+  .get(
+    validateTypes(VENDOR, PURCHASE_ORDER),
+    orderController.allOrderTransactions
+  )
+  .post(
+    validateTypes(VENDOR, PURCHASE_ORDER),
+    orderController.createTransaction
+  );
+
+router
+  .route(
+    "/vendors/:storeId/purchase-orders/:orderId/transactions/:transactionId"
+  )
+  .get(
+    validateTypes(VENDOR, PURCHASE_ORDER),
+    orderController.specificTransaction
+  )
+  .put(validateTypes(VENDOR, PURCHASE_ORDER), orderController.updateTransaction)
+  .delete(
+    validateTypes(VENDOR, PURCHASE_ORDER),
+    orderController.deleteTransaction
+  );
 
 // Transfer Orders
 router
@@ -70,10 +87,7 @@ router
 
 router
   .route("/shops/:storeId/transfer-orders/:orderId")
-  .get(
-    validateTypes(SHOP, TRANSFER_ORDER),
-    orderController.specificOrder(TRANSFER_ORDER)
-  )
+  .get(validateTypes(SHOP, TRANSFER_ORDER), orderController.specificOrder)
   .put(
     validateTypes(SHOP, TRANSFER_ORDER),
     orderController.receiveOrder(TRANSFER_ORDER)

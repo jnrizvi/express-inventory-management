@@ -15,15 +15,13 @@ const allOrders =
     res.send(orders);
   };
 
-const specificOrder =
-  (orderType: string) => async (req: Request, res: Response) => {
-    const storeId = +req.params.storeId;
-    const orderId = +req.params.orderId;
+const specificOrder = async (req: Request, res: Response) => {
+  const orderId = +req.params.orderId;
 
-    const order = await orderService.specificOrder(storeId, orderId, orderType);
+  const order = await orderService.specificOrder(orderId);
 
-    res.send(order);
-  };
+  res.send(order);
+};
 
 const placeOrder =
   (orderType: string) => async (req: Request, res: Response) => {
@@ -63,10 +61,68 @@ const fulfillSalesOrder = async (req: Request, res: Response) => {
   res.send(order);
 };
 
+// const deleteOrder = async (req: Request, res: Response) => {
+//   const orderId = +req.params.orderId;
+
+//   const order = await orderService.deleteOrder(orderId)
+
+//   res.send(order)
+// }
+
+const allOrderTransactions = async (req: Request, res: Response) => {
+  const orderId = +req.params.orderId;
+
+  const transactions = await orderService.allOrderTransactions(orderId);
+
+  res.send(transactions);
+};
+
+const specificTransaction = async (req: Request, res: Response) => {
+  const transactionId = +req.params.transactionId;
+
+  const transaction = await orderService.specificTransaction(transactionId);
+
+  res.send(transaction);
+};
+
+const createTransaction = async (req: Request, res: Response) => {
+  const orderId = +req.params.orderId;
+  const payload = req.body;
+
+  const transaction = await orderService.createTransaction(orderId, payload);
+
+  res.send(transaction);
+};
+
+const updateTransaction = async (req: Request, res: Response) => {
+  const transactionId = +req.params.transactionId;
+  const payload = req.body;
+
+  const transaction = await orderService.updateTransaction(
+    transactionId,
+    payload
+  );
+
+  res.send(transaction);
+};
+
+const deleteTransaction = async (req: Request, res: Response) => {
+  const transactionId = +req.params.transactionId;
+
+  const transaction = await orderService.deleteTransaction(transactionId);
+
+  res.send(transaction);
+};
+
 export default {
   allOrders,
   specificOrder,
   placeOrder,
   fulfillSalesOrder,
   receiveOrder,
+  allOrderTransactions,
+  specificTransaction,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
 };

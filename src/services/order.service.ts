@@ -17,16 +17,10 @@ const allOrders = (
 };
 
 // TODO: Use a data transfer object instead of the prisma type
-const specificOrder = (
-  storeId: number,
-  orderId: number,
-  orderType: string
-): Promise<Order> => {
+const specificOrder = (orderId: number): Promise<Order> => {
   return prisma.order.findUniqueOrThrow({
     where: {
       id: orderId,
-      store_id: storeId,
-      order_type_key: orderType,
     },
   });
 };
@@ -370,6 +364,64 @@ const receiveOrder = async (
   }
 };
 
+// TODO: Add on delete cascade to children of order as necessary
+// const deleteOrder = (orderId: number) => {
+//   return prisma.transaction.delete({
+//     where: {
+//       id: orderId,
+//     },
+//   });
+// };
+
+const allOrderTransactions = (orderId: number) => {
+  return prisma.transaction.findMany({
+    where: {
+      order_id: orderId,
+    },
+  });
+};
+
+const specificTransaction = (transactionId: number) => {
+  return prisma.transaction.findUnique({
+    where: {
+      id: transactionId,
+    },
+  });
+};
+
+const createTransaction = (orderId: number, payload: any) => {
+  return prisma.transaction.create({
+    data: {
+      order_id: orderId,
+      transaction_status_key: payload.transactionStatusKey,
+      transaction_type_key: payload.transactionTypeKey,
+      transaction_method_key: payload.transactionMethodKey,
+      amount: payload.amount,
+    },
+  });
+};
+
+const updateTransaction = (transactionId: number, payload: any) => {
+  return prisma.transaction.update({
+    where: {
+      id: transactionId,
+    },
+    data: {
+      transaction_status_key: payload.transactionStatusKey,
+      transaction_method_key: payload.transactionMethodKey,
+      amount: payload.amount,
+    },
+  });
+};
+
+const deleteTransaction = (transactionId: number) => {
+  return prisma.transaction.delete({
+    where: {
+      id: transactionId,
+    },
+  });
+};
+
 // TODO: Figure out how to do the error handling properly
 const matchInventoryWithOrderLines = async (
   storeId: number,
@@ -436,4 +488,10 @@ export default {
   placeOrder,
   fulfillOrder,
   receiveOrder,
+  // deleteOrder,
+  allOrderTransactions,
+  specificTransaction,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
 };
