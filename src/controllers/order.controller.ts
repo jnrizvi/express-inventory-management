@@ -61,13 +61,13 @@ const fulfillSalesOrder = async (req: Request, res: Response) => {
   res.send(order);
 };
 
-// const deleteOrder = async (req: Request, res: Response) => {
-//   const orderId = +req.params.orderId;
+const deleteOrder = async (req: Request, res: Response) => {
+  const orderId = +req.params.orderId;
 
-//   const order = await orderService.deleteOrder(orderId)
+  const order = await orderService.deleteOrder(orderId);
 
-//   res.send(order)
-// }
+  res.send(order);
+};
 
 const allOrderTransactions = async (req: Request, res: Response) => {
   const orderId = +req.params.orderId;
@@ -120,6 +120,7 @@ export default {
   placeOrder,
   fulfillSalesOrder,
   receiveOrder,
+  deleteOrder,
   allOrderTransactions,
   specificTransaction,
   createTransaction,

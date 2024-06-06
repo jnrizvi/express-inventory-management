@@ -18,8 +18,8 @@ model User {
   email         String   @unique @db.VarChar(255)
   created_at    DateTime @default(now()) @db.Timestamptz
 
-  userRole UserRole @relation(fields: [user_role_key], references: [key])
-  address  Address  @relation(fields: [address_id], references: [id])
+  userRole UserRole @relation(fields: [user_role_key], references: [key], onDelete: Restrict)
+  address  Address  @relation(fields: [address_id], references: [id], onDelete: Restrict)
   orders   Order[]
 
   @@map("user")
@@ -42,10 +42,10 @@ model Order {
   order_status_key String
   created_at       DateTime @default(now()) @db.Timestamptz
 
-  store        Store         @relation(fields: [store_id], references: [id])
-  user         User          @relation(fields: [user_id], references: [id])
-  orderType    OrderType     @relation(fields: [order_type_key], references: [key])
-  orderStatus  OrderStatus   @relation(fields: [order_status_key], references: [key])
+  store        Store         @relation(fields: [store_id], references: [id], onDelete: Restrict)
+  user         User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  orderType    OrderType     @relation(fields: [order_type_key], references: [key], onDelete: Restrict)
+  orderStatus  OrderStatus   @relation(fields: [order_status_key], references: [key], onDelete: Restrict)
   orderLines   OrderLine[]
   transactions Transaction[]
   shipments    Shipment[]
@@ -77,8 +77,8 @@ model OrderLine {
   unit_price       Int
   quantity_ordered Int
 
-  order   Order   @relation(fields: [order_id], references: [id])
-  product Product @relation(fields: [product_id], references: [id])
+  order   Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
 
   @@id(name: "id", [order_id, product_id])
   @@map("order_line")
@@ -93,10 +93,10 @@ model Transaction {
   amount                 Int
   created_at             DateTime @default(now()) @db.Timestamptz
 
-  order             Order             @relation(fields: [order_id], references: [id])
-  transactionType   TransactionType   @relation(fields: [transaction_type_key], references: [key])
-  transactionStatus TransactionStatus @relation(fields: [transaction_status_key], references: [key])
-  transactionMethod TransactionMethod @relation(fields: [transaction_method_key], references: [key])
+  order             Order             @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  transactionType   TransactionType   @relation(fields: [transaction_type_key], references: [key], onDelete: Restrict)
+  transactionStatus TransactionStatus @relation(fields: [transaction_status_key], references: [key], onDelete: Restrict)
+  transactionMethod TransactionMethod @relation(fields: [transaction_method_key], references: [key], onDelete: Restrict)
 
   @@map("transaction")
 }
@@ -147,8 +147,8 @@ model Inventory {
   quantity_stocked  Int
   quantity_reserved Int @default(0)
 
-  product Product @relation(fields: [product_id], references: [id])
-  store   Store   @relation(fields: [store_id], references: [id])
+  product Product @relation(fields: [product_id], references: [id], onDelete: Restrict)
+  store   Store   @relation(fields: [store_id], references: [id], onDelete: Restrict)
 
   @@id(name: "id", [product_id, store_id])
   @@map("inventory")
@@ -162,8 +162,8 @@ model Store {
   email          String   @unique @db.VarChar(255)
   created_at     DateTime @default(now()) @db.Timestamptz
 
-  address   Address     @relation(fields: [address_id], references: [id])
-  storeType StoreType   @relation(fields: [store_type_key], references: [key])
+  address   Address     @relation(fields: [address_id], references: [id], onDelete: Restrict)
+  storeType StoreType   @relation(fields: [store_type_key], references: [key], onDelete: Restrict)
   inventory Inventory[]
   orders    Order[]
 
@@ -202,8 +202,8 @@ model Shipment {
   date_expected DateTime? @db.Timestamptz
   created_at    DateTime  @default(now()) @db.Timestamptz
 
-  order   Order   @relation(fields: [order_id], references: [id])
-  address Address @relation(fields: [address_id], references: [id])
+  order   Order   @relation(fields: [order_id], references: [id], onDelete: Cascade)
+  address Address @relation(fields: [address_id], references: [id], onDelete: Restrict)
 
   @@id(name: "id", [order_id, address_id])
   @@map("shipment")

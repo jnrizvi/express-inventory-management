@@ -21,25 +21,25 @@ router
 //       These routes could go in their own inventory.route.ts file.
 router
   .route("/shops/:storeId/products")
-  .get(validateTypes(SHOP), productController.allStoreProducts)
-  .post(validateTypes(SHOP), productController.addProductToStore);
+  .get(validateTypes(SHOP), productController.allInventory)
+  .post(validateTypes(SHOP), productController.createInventory);
 
 router
   .route("/shops/:storeId/products/:productId")
-  .get(validateTypes(SHOP), productController.specificStoreProduct)
-  .put(validateTypes(SHOP), productController.updateProductInventory)
-  .delete((_, res) => res.send("Not implemented"));
+  .get(validateTypes(SHOP), productController.specificInventory)
+  .put(validateTypes(SHOP), productController.updateInventory)
+  .delete(validateTypes(SHOP), productController.deleteInventory);
 
 // Vendor Inventory
 router
   .route("/vendors/:storeId/products")
-  .get(validateTypes(VENDOR), productController.allStoreProducts)
-  .post(validateTypes(VENDOR), productController.addProductToStore);
+  .get(validateTypes(VENDOR), productController.allInventory)
+  .post(validateTypes(VENDOR), productController.createInventory);
 
 router
   .route("/vendors/:storeId/products/:productId")
-  .get(validateTypes(VENDOR), productController.specificStoreProduct)
-  .put(validateTypes(VENDOR), productController.updateProductInventory)
-  .delete((_, res) => res.send("Not implemented"));
+  .get(validateTypes(VENDOR), productController.specificInventory)
+  .put(validateTypes(VENDOR), productController.updateInventory)
+  .delete(validateTypes(VENDOR), productController.deleteInventory);
 
 export default router;

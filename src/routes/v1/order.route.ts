@@ -23,7 +23,7 @@ router
   .route("/shops/:storeId/sales-orders/:orderId")
   .get(validateTypes(SHOP, SALES_ORDER), orderController.specificOrder)
   .put(validateTypes(SHOP, SALES_ORDER), orderController.fulfillSalesOrder)
-  .delete((_, res) => res.send("Not implemented"));
+  .delete(validateTypes(SHOP, SALES_ORDER), orderController.deleteOrder);
 
 router
   .route("/shops/:storeId/sales-orders/:orderId/transactions")
@@ -52,7 +52,7 @@ router
     validateTypes(VENDOR, PURCHASE_ORDER),
     orderController.receiveOrder(PURCHASE_ORDER)
   )
-  .delete((_, res) => res.send("Not implemented"));
+  .delete(validateTypes(VENDOR, PURCHASE_ORDER), orderController.deleteOrder);
 
 router
   .route("/vendors/:storeId/purchase-orders/:orderId/transactions")
@@ -92,6 +92,6 @@ router
     validateTypes(SHOP, TRANSFER_ORDER),
     orderController.receiveOrder(TRANSFER_ORDER)
   )
-  .delete((_, res) => res.send("Not implemented"));
+  .delete(validateTypes(SHOP, STAFF), orderController.deleteOrder);
 
 export default router;

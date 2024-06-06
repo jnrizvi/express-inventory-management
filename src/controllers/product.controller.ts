@@ -32,38 +32,38 @@ const updateProduct = async (req: Request, res: Response) => {
   res.send(product);
 };
 
-const allStoreProducts = async (req: Request, res: Response) => {
+const allInventory = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
 
-  const products = await productService.allStoreProducts(storeId);
+  const products = await productService.allInventory(storeId);
 
   res.send(products);
 };
 
-const specificStoreProduct = async (req: Request, res: Response) => {
+const specificInventory = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const productId = +req.params.productId;
 
-  const product = await productService.specificStoreProduct(storeId, productId);
+  const product = await productService.specificInventory(storeId, productId);
 
   res.send(product);
 };
 
-const addProductToStore = async (req: Request, res: Response) => {
+const createInventory = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const payload = req.body;
 
-  const products = await productService.addProductToStore(storeId, payload);
+  const products = await productService.createInventory(storeId, payload);
 
   res.send(products);
 };
 
-const updateProductInventory = async (req: Request, res: Response) => {
+const updateInventory = async (req: Request, res: Response) => {
   const storeId = +req.params.storeId;
   const productId = +req.params.productId;
   const payload = req.body;
 
-  const product = await productService.updateProductInventory(
+  const product = await productService.updateInventory(
     storeId,
     productId,
     payload
@@ -72,13 +72,23 @@ const updateProductInventory = async (req: Request, res: Response) => {
   res.send(product);
 };
 
+const deleteInventory = async (req: Request, res: Response) => {
+  const storeId = +req.params.storeId;
+  const productId = +req.params.productId;
+
+  const inventory = await productService.deleteInventory(storeId, productId);
+
+  res.send(inventory);
+};
+
 export default {
   allProducts,
   specificProduct,
   createProduct,
   updateProduct,
-  allStoreProducts,
-  specificStoreProduct,
-  addProductToStore,
-  updateProductInventory,
+  allInventory,
+  specificInventory,
+  createInventory,
+  updateInventory,
+  deleteInventory,
 };

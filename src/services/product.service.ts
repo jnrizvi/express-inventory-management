@@ -37,7 +37,7 @@ const updateProduct = (productId: number, payload: any): Promise<Product> => {
 };
 
 // TODO: Use a data transfer object instead of the prisma type
-const allStoreProducts = (storeId: number): Promise<Inventory[]> => {
+const allInventory = (storeId: number): Promise<Inventory[]> => {
   return prisma.inventory.findMany({
     where: {
       store_id: storeId,
@@ -49,7 +49,7 @@ const allStoreProducts = (storeId: number): Promise<Inventory[]> => {
 };
 
 // TODO: Use a data transfer object instead of the prisma type
-const specificStoreProduct = (
+const specificInventory = (
   storeId: number,
   productId: number
 ): Promise<Inventory | null> => {
@@ -66,7 +66,7 @@ const specificStoreProduct = (
   });
 };
 
-const addProductToStore = (storeId: number, payload: any) => {
+const createInventory = (storeId: number, payload: any) => {
   return prisma.inventory.create({
     data: {
       store_id: storeId,
@@ -77,11 +77,7 @@ const addProductToStore = (storeId: number, payload: any) => {
   });
 };
 
-const updateProductInventory = (
-  storeId: number,
-  productId: number,
-  payload: any
-) => {
+const updateInventory = (storeId: number, productId: number, payload: any) => {
   return prisma.inventory.update({
     where: {
       id: {
@@ -95,13 +91,25 @@ const updateProductInventory = (
   });
 };
 
+const deleteInventory = (storeId: number, productId: number) => {
+  return prisma.inventory.delete({
+    where: {
+      id: {
+        store_id: storeId,
+        product_id: productId,
+      },
+    },
+  });
+};
+
 export default {
   allProducts,
   specificProduct,
   createProduct,
   updateProduct,
-  allStoreProducts,
-  specificStoreProduct,
-  addProductToStore,
-  updateProductInventory,
+  allInventory,
+  specificInventory,
+  createInventory,
+  updateInventory,
+  deleteInventory,
 };

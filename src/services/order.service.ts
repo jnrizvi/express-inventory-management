@@ -364,14 +364,13 @@ const receiveOrder = async (
   }
 };
 
-// TODO: Add on delete cascade to children of order as necessary
-// const deleteOrder = (orderId: number) => {
-//   return prisma.transaction.delete({
-//     where: {
-//       id: orderId,
-//     },
-//   });
-// };
+const deleteOrder = (orderId: number) => {
+  return prisma.transaction.delete({
+    where: {
+      id: orderId,
+    },
+  });
+};
 
 const allOrderTransactions = (orderId: number) => {
   return prisma.transaction.findMany({
@@ -488,7 +487,7 @@ export default {
   placeOrder,
   fulfillOrder,
   receiveOrder,
-  // deleteOrder,
+  deleteOrder,
   allOrderTransactions,
   specificTransaction,
   createTransaction,
