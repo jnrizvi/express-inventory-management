@@ -1,27 +1,29 @@
 import express from "express";
+import { userController } from "../../controllers";
+import { CUSTOMER, STAFF } from "../../util/constants";
 
 const router = express.Router();
 
 // Customers
 router
   .route("/customers")
-  .get((_, res) => res.send("Not implemented"))
-  .post((_, res) => res.send("Not implemented"));
+  .get(userController.allUsers(CUSTOMER))
+  .post(userController.createUser(CUSTOMER));
 
 router
   .route("/customers/:userId")
-  .get((_, res) => res.send("Not implemented"))
-  .put((_, res) => res.send("Not implemented"))
-  .delete((_, res) => res.send("Not implemented"));
+  .get(userController.specificUser)
+  .put(userController.updateUser)
+  .delete(userController.deleteUser);
 
 // Staff
 router
   .route("/staff")
-  .get((_, res) => res.send("Not implemented"))
-  .post((_, res) => res.send("Not implemented"));
+  .get(userController.allUsers(STAFF))
+  .post(userController.createUser(STAFF));
 
 router
   .route("/staff/:userId")
-  .get((_, res) => res.send("Not implemented"))
-  .put((_, res) => res.send("Not implemented"))
-  .delete((_, res) => res.send("Not implemented"));
+  .get(userController.specificUser)
+  .put(userController.updateUser)
+  .delete(userController.deleteUser);
