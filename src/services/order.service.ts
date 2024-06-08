@@ -116,22 +116,11 @@ const placeOrder = async (
               },
             },
           }),
-          ...(payload.shippingAddress && {
-            shipments: {
-              create: {
-                address: {
-                  connectOrCreate: {
-                    where: {
-                      ...payload.shippingAddress,
-                    },
-                    create: {
-                      ...payload.shippingAddress,
-                    },
-                  },
-                },
-              },
+          shipments: {
+            create: {
+              address_id: payload.user.address_id,
             },
-          }),
+          },
         },
         include: {
           transactions: true,
@@ -406,9 +395,13 @@ const updateTransaction = (transactionId: number, payload: any) => {
       id: transactionId,
     },
     data: {
-      transaction_status_key: payload.transactionStatusKey,
-      transaction_method_key: payload.transactionMethodKey,
-      amount: payload.amount,
+      ...(payload.transactionStatusKey && {
+        transaction_status_key: payload.transactionStatusKey,
+      }),
+      ...(payload.transactionMethodKey && {
+        transaction_method_key: payload.transactionMethodKey,
+      }),
+      ...(payload.amount && { amount: payload.amount }),
     },
   });
 };

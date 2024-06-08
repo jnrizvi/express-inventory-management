@@ -29,9 +29,9 @@ const updateProduct = (productId: number, payload: any): Promise<Product> => {
       id: productId,
     },
     data: {
-      name: payload.name,
-      price: payload.price,
-      description: payload.description,
+      ...(payload.name && { name: payload.name }),
+      ...(payload.price && { price: payload.price }),
+      ...(payload.description && { description: payload.description }),
     },
   });
 };
@@ -86,7 +86,9 @@ const updateInventory = (storeId: number, productId: number, payload: any) => {
       },
     },
     data: {
-      quantity_stocked: payload.quantityStocked,
+      ...(payload.quantityStocked && {
+        quantity_stocked: payload.quantityStocked,
+      }),
     },
   });
 };
