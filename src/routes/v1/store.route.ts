@@ -1,27 +1,29 @@
 import express from "express";
+import { storeController } from "../../controllers";
+import { SHOP, VENDOR } from "../../util/constants";
 
 const router = express.Router();
 
 // Shops
 router
   .route("/shops")
-  .get((_, res) => res.send("Not implemented"))
-  .post((_, res) => res.send("Not implemented"));
+  .get(storeController.allStores(SHOP))
+  .post(storeController.createStore(SHOP));
 
 router
   .route("/shops/:storeId")
-  .get((_, res) => res.send("Not implemented"))
-  .put((_, res) => res.send("Not implemented"))
-  .delete((_, res) => res.send("Not implemented"));
+  .get(storeController.specificStore)
+  .put(storeController.updateStore)
+  .delete(storeController.deleteStore);
 
 // Vendors
 router
   .route("/vendors")
-  .get((_, res) => res.send("Not implemented"))
-  .post((_, res) => res.send("Not implemented"));
+  .get(storeController.allStores(VENDOR))
+  .post(storeController.createStore(VENDOR));
 
 router
   .route("/vendors/:storeId")
-  .get((_, res) => res.send("Not implemented"))
-  .put((_, res) => res.send("Not implemented"))
-  .delete((_, res) => res.send("Not implemented"));
+  .get(storeController.specificStore)
+  .put(storeController.updateStore)
+  .delete(storeController.deleteStore);
