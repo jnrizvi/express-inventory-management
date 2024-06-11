@@ -96,7 +96,12 @@ async function main() {
       {
         key: "PURCHASE_ORDER",
         description:
-          "An order placed by an owner to purchase a product from a vendor.",
+          "An order placed by a staff member to purchase a product from a vendor.",
+      },
+      {
+        key: "TRANSFER_ORDER",
+        description:
+          "An order placed by a staff member to move a product between two shops.",
       },
     ],
   });

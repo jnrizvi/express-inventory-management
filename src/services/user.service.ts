@@ -6,6 +6,9 @@ const allUsers = (userRole: string): Promise<User[]> => {
     where: {
       user_role_key: userRole,
     },
+    include: {
+      address: true,
+    },
   });
 };
 
@@ -13,6 +16,9 @@ const specificUser = (userId: number): Promise<User | null> => {
   return prisma.user.findUnique({
     where: {
       id: userId,
+    },
+    include: {
+      address: true,
     },
   });
 };

@@ -20,6 +20,11 @@ const allOrders = (
           }),
       ...(orderStatus && { order_status_key: orderStatus }),
     },
+    include: {
+      orderLines: true,
+      transactions: true,
+      shipments: true,
+    },
   });
 };
 
