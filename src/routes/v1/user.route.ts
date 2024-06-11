@@ -27,3 +27,5 @@ router
   .get(userController.specificUser)
   .put(userController.updateUser)
   .delete(userController.deleteUser);
+
+export default router;

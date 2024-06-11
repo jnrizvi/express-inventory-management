@@ -4,17 +4,24 @@ import prisma from "../client";
 const validateTypes =
   (...requiredTypes: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
-    const store = await prisma.store.findUnique({
-      where: { id: +req.params.storeId },
-    });
+    const store = req.params.storeId
+      ? await prisma.store.findUnique({
+          where: { id: +req.params.storeId },
+        })
+      : null;
 
-    const user = await prisma.user.findUnique({
-      where: { email: req.body.email },
-    });
+    const user = req.body.email
+      ? await prisma.user.findUnique({
+          where: { email: req.body.email },
+        })
+      : null;
 
-    const order = await prisma.order.findUnique({
-      where: { id: +req.params.orderId },
-    });
+    const order = req.params.orderId
+      ? await prisma.order.findUnique({
+          where: { id: +req.params.orderId },
+          include: { user: true },
+        })
+      : null;
 
     const presentTypes: string[] = [];
     if (store) {

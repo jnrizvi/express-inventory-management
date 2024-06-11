@@ -27,3 +27,5 @@ router
   .get(storeController.specificStore)
   .put(storeController.updateStore)
   .delete(storeController.deleteStore);
+
+export default router;

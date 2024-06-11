@@ -3,11 +3,10 @@ import { orderService } from "../services";
 
 const allOrders =
   (orderType: string) => async (req: Request, res: Response) => {
-    const storeId = +req.params.storeId;
     const orderStatus = req.query.orderStatus as string;
 
     const orders = await orderService.allOrders(
-      storeId,
+      req.body.store,
       orderType,
       orderStatus
     );

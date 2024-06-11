@@ -4,7 +4,6 @@ import {
   CUSTOMER,
   STAFF,
   SHOP,
-  VENDOR,
   SALES_ORDER,
   PURCHASE_ORDER,
   TRANSFER_ORDER,
@@ -38,44 +37,33 @@ router
 
 // Purchase Orders
 router
-  .route("/vendors/:storeId/purchase-orders")
-  .get(validateTypes(VENDOR), orderController.allOrders(PURCHASE_ORDER))
-  .post(
-    validateTypes(VENDOR, STAFF),
-    orderController.placeOrder(PURCHASE_ORDER)
-  );
+  .route("/shops/:storeId/purchase-orders")
+  .get(validateTypes(SHOP), orderController.allOrders(PURCHASE_ORDER))
+  .post(validateTypes(SHOP, STAFF), orderController.placeOrder(PURCHASE_ORDER));
 
 router
-  .route("/vendors/:storeId/purchase-orders/:orderId")
-  .get(validateTypes(VENDOR, PURCHASE_ORDER), orderController.specificOrder)
+  .route("/shops/:storeId/purchase-orders/:orderId")
+  .get(validateTypes(SHOP, PURCHASE_ORDER), orderController.specificOrder)
   .put(
-    validateTypes(VENDOR, PURCHASE_ORDER),
+    validateTypes(SHOP, PURCHASE_ORDER),
     orderController.receiveOrder(PURCHASE_ORDER)
   )
-  .delete(validateTypes(VENDOR, PURCHASE_ORDER), orderController.deleteOrder);
+  .delete(validateTypes(SHOP, PURCHASE_ORDER), orderController.deleteOrder);
 
 router
-  .route("/vendors/:storeId/purchase-orders/:orderId/transactions")
+  .route("/shops/:storeId/purchase-orders/:orderId/transactions")
   .get(
-    validateTypes(VENDOR, PURCHASE_ORDER),
+    validateTypes(SHOP, PURCHASE_ORDER),
     orderController.allOrderTransactions
   )
-  .post(
-    validateTypes(VENDOR, PURCHASE_ORDER),
-    orderController.createTransaction
-  );
+  .post(validateTypes(SHOP, PURCHASE_ORDER), orderController.createTransaction);
 
 router
-  .route(
-    "/vendors/:storeId/purchase-orders/:orderId/transactions/:transactionId"
-  )
-  .get(
-    validateTypes(VENDOR, PURCHASE_ORDER),
-    orderController.specificTransaction
-  )
-  .put(validateTypes(VENDOR, PURCHASE_ORDER), orderController.updateTransaction)
+  .route("/shops/:storeId/purchase-orders/:orderId/transactions/:transactionId")
+  .get(validateTypes(SHOP, PURCHASE_ORDER), orderController.specificTransaction)
+  .put(validateTypes(SHOP, PURCHASE_ORDER), orderController.updateTransaction)
   .delete(
-    validateTypes(VENDOR, PURCHASE_ORDER),
+    validateTypes(SHOP, PURCHASE_ORDER),
     orderController.deleteTransaction
   );
 

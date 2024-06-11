@@ -1,16 +1,23 @@
-import { Order, OrderLine, Prisma } from "@prisma/client";
 import prisma from "../client";
+import { Order, OrderLine, Prisma, Store } from "@prisma/client";
+import { SALES_ORDER } from "../util/constants";
 
 // TODO: Use a data transfer object instead of the prisma type
 const allOrders = (
-  storeId: number,
+  store: Store,
   orderType: string,
   orderStatus: string | null
 ): Promise<Order[]> => {
   return prisma.order.findMany({
     where: {
-      store_id: storeId,
       order_type_key: orderType,
+      ...(orderType === SALES_ORDER
+        ? { store_id: store.id }
+        : {
+            user: {
+              address_id: store.address_id,
+            },
+          }),
       ...(orderStatus && { order_status_key: orderStatus }),
     },
   });
@@ -34,7 +41,7 @@ const placeOrder = async (
   orderType: string
 ) => {
   const result = await matchInventoryWithOrderLines(
-    storeId,
+    payload.storeId,
     payload.orderLines
   );
 
@@ -98,7 +105,7 @@ const placeOrder = async (
       const order = await trx.order.create({
         data: {
           user_id: userId,
-          store_id: storeId,
+          store_id: payload.storeId,
           order_status_key: "OPEN",
           order_type_key: orderType,
           orderLines: {
@@ -234,7 +241,6 @@ const receiveOrder = async (
   payload: any,
   orderType: string
 ) => {
-  // This storeId parameter indicates the receiving store which the shipment is bound for
   const shipmentToReceivingStore = await prisma.shipment.findUnique({
     where: {
       id: {
@@ -354,7 +360,7 @@ const receiveOrder = async (
 };
 
 const deleteOrder = (orderId: number) => {
-  return prisma.transaction.delete({
+  return prisma.order.delete({
     where: {
       id: orderId,
     },
@@ -469,6 +475,8 @@ const matchInventoryWithOrderLines = async (
     } unavailable product(s): ${unavailableInventory.map(
       (item) => `${item.product.name}`
     )}`;
+  } else if (!matchingInventory.length) {
+    return "No matching inventory.";
   }
 
   return inventoryOrdered;
