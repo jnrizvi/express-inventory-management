@@ -180,14 +180,15 @@ model StoreType {
 }
 
 model Address {
-  id            Int      @id @default(autoincrement())
-  unit_number   Int
-  address_line1 String   @db.VarChar(255)
-  address_line2 String?  @db.VarChar(255)
-  postal_code   String   @db.VarChar(255)
-  city          String   @db.VarChar(255)
-  country       String   @db.VarChar(255)
-  created_at    DateTime @default(now()) @db.Timestamptz
+  id                 Int      @id @default(autoincrement())
+  line_1             String   @db.VarChar(255)
+  line_2             String?  @db.VarChar(255)
+  line_3             String?  @db.VarChar(255)
+  zip_or_postal_code String   @db.VarChar(255)
+  locality           String   @db.VarChar(255)
+  region             String   @db.VarChar(255)
+  country            String   @db.VarChar(255)
+  created_at         DateTime @default(now()) @db.Timestamptz
 
   users     User[]
   stores    Store[]

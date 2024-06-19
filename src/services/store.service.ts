@@ -21,11 +21,12 @@ const createStore = async (payload: any, storeType: string): Promise<Store> => {
   return prisma.$transaction(async (trx) => {
     let address = await trx.address.findFirst({
       where: {
-        unit_number: payload.unitNumber,
-        address_line1: payload.addressLine1,
-        ...(payload.addressLine2 && { address_line2: payload.addressLine2 }),
-        postal_code: payload.postalCode,
-        city: payload.city,
+        line_1: payload.line1,
+        ...(payload.line2 && { line_2: payload.line2 }),
+        ...(payload.line3 && { line_3: payload.line3 }),
+        zip_or_postal_code: payload.zipOrPostalCode,
+        locality: payload.locality,
+        region: payload.region,
         country: payload.country,
       },
     });
@@ -33,11 +34,12 @@ const createStore = async (payload: any, storeType: string): Promise<Store> => {
     if (!address) {
       address = await trx.address.create({
         data: {
-          unit_number: payload.unitNumber,
-          address_line1: payload.addressLine1,
-          ...(payload.addressLine2 && { address_line2: payload.addressLine2 }),
-          postal_code: payload.postalCode,
-          city: payload.city,
+          line_1: payload.line1,
+          ...(payload.line2 && { line_2: payload.line2 }),
+          ...(payload.line3 && { line_3: payload.line3 }),
+          zip_or_postal_code: payload.zipOrPostalCode,
+          locality: payload.locality,
+          region: payload.region,
           country: payload.country,
         },
       });
